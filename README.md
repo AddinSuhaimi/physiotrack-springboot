@@ -113,3 +113,17 @@ Only open a PR if:
 * Services must follow the component/module boundaries defined in the design
 
 ---
+
+## 8. Running the Spring Boot app
+
+### Windows
+
+```bash
+./mvnw.cmd -pl springboot-app spring-boot:run
+```
+
+### macOS/Linux
+
+```bash
+./mvnw -pl springboot-app spring-boot:run
+```
