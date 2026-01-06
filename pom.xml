@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0                              http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.physiotrack</groupId>
+  <artifactId>physiotrack</artifactId>
+  <version>1.0.0</version>
+  <!-- IMPORTANT -->
+  <packaging>pom</packaging>
+  <properties>
+    <!-- Team builds to Java 17 bytecode no matter what JDK they have -->
+    <maven.compiler.release>17</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>3.5.0</version>
+        <executions>
+          <execution>
+            <id>enforce-java</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <!-- Require at least Java 17 to run Maven -->
+                <requireJavaVersion>
+                  <version>[17,)</version>
+                </requireJavaVersion>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+  <modules>
+    <module>authentication</module>
+    <module>personal-info</module>
+    <module>user-management</module>
+    <module>test</module>
+    <module>journal</module>
+    <module>appointment</module>
+    <module>therapy</module>
+    <module>progress-tracking</module>
+    <module>summary</module>
+  </modules>
+</project>
