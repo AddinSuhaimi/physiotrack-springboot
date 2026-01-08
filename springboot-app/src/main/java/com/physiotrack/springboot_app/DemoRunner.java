@@ -1,4 +1,4 @@
-package com.physiotrack.springbootapp;
+package com.physiotrack.springboot_app;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
