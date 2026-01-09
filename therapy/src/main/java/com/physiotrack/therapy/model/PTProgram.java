@@ -16,8 +16,11 @@ public class PTProgram {
     private Long patientId;
     private LocalDate assignedDate;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "pt_program_id")
+    @OneToMany(
+        mappedBy = "program",
+        cascade = CascadeType.ALL,
+        orphanRemoval = true
+    )
     private List<PTActivity> activities = new ArrayList<>();
 
     public Long getId() {

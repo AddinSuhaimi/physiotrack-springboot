@@ -12,8 +12,11 @@ public class OTActivity {
 
     private String name;
     private String description;
-    private String videoUrl;
     private boolean completed;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ot_program_id")
+    private OTProgram program;
 
     public Long getId() {
         return id;
@@ -35,19 +38,19 @@ public class OTActivity {
         this.description = description;
     }
 
-    public String getVideoUrl() {
-        return videoUrl;
-    }
-
-    public void setVideoUrl(String videoUrl) {
-        this.videoUrl = videoUrl;
-    }
-
     public boolean isCompleted() {
         return completed;
     }
 
     public void setCompleted(boolean completed) {
         this.completed = completed;
+    }
+
+    public void setProgram(OTProgram program) {
+        this.program = program;
+    }
+
+    public OTProgram getProgram() {
+        return program;
     }
 }
