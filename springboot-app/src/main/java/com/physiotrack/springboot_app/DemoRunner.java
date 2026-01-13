@@ -1,75 +1,59 @@
 package com.physiotrack.springboot_app;
 
 import java.util.List;
+import java.util.Scanner;
 
 import com.physiotrack.usermanagement.model.User;
 import com.physiotrack.usermanagement.service.UserManagementService;
 import com.physiotrack.personalinfo.service.PersonalInfoService;
 import com.physiotrack.usermanagement.repository.UserRepository;
+
+// Therapy module imports (provided by teammate)
 import com.physiotrack.therapy.model.PTProgram;
 import com.physiotrack.therapy.model.PTActivity;
 import com.physiotrack.therapy.model.OTProgram;
+import com.physiotrack.therapy.model.OTActivity;
 import com.physiotrack.therapy.api.TherapyManagementService;
 import com.physiotrack.therapy.api.TherapyProgressService;
 import com.physiotrack.therapy.init.TherapyDataInitializer;
-import com.physiotrack.therapy.model.OTActivity;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 /**
- * TEAM TEMPLATE: DemoRunner
+ * INTERACTIVE DemoRunner (Console Menu)
  *
- * Purpose:
- * - This is the ONLY console entry-point used for Spring Boot grading.
- * - Each module owner should add a small "demo section" here to prove their 4 functionalities.
+ * - Shows a menu of modules
+ * - Prompts user to select a module to run
+ * - Loops until user exits
  *
- * Rule:
- * - Do NOT implement business logic in this class.
- * - Only call service interfaces from modules and print results.
- *
- * How teammates contribute:
- * - Each module owner adds:
- *   (1) a constructor-injected service interface
- *   (2) a demo method call inside run()
- *
- * Example (Appointment):
- *   private final AppointmentService appointmentService;
- *   DemoRunner(AppointmentService appointmentService) { this.appointmentService = appointmentService; }
- *   ...
- *   appointmentServiceDemo();
+ * Note:
+ * - This class should NOT contain business logic. It should only call services and print outputs.
  */
 @Component
 public class DemoRunner implements CommandLineRunner {
 
+  // ADD HERE AFTER DONE
   private final UserManagementService userManagementService;
   private final PersonalInfoService personalInfoService;
+
   private final TherapyManagementService therapyManagementService;
   private final TherapyProgressService therapyProgressService;
-  private final UserRepository userRepository;
   private final TherapyDataInitializer therapyDataInitializer;
 
+  // Temporary direct repo access for seeding/demo data
+  private final UserRepository userRepository;
 
-  // ========= MODULE SERVICE INTERFACES (inject here) =========
-  // Add interfaces from each module (service interfaces live in that module)
-  //
-  // Example:
-  // private final AppointmentService appointmentService;
-  // private final AuthenticationService authenticationService;
-  // private final NotificationService notificationService;
-
-  // ========= CONSTRUCTOR INJECTION =========
-  // Add parameters for each service interface you inject.
+  // ADD HERE AFTER DONE
   @Autowired
   public DemoRunner(
-    UserManagementService userManagementService,
-    PersonalInfoService personalInfoService,
-    TherapyManagementService therapyManagementService,
-    TherapyProgressService therapyProgressService,
-    UserRepository userRepository,
-    TherapyDataInitializer therapyDataInitializer
-      // AuthenticationService authenticationService,
-      // NotificationService notificationService
+      UserManagementService userManagementService,
+      PersonalInfoService personalInfoService,
+      TherapyManagementService therapyManagementService,
+      TherapyProgressService therapyProgressService,
+      UserRepository userRepository,
+      TherapyDataInitializer therapyDataInitializer
   ) {
     this.userManagementService = userManagementService;
     this.personalInfoService = personalInfoService;
@@ -77,8 +61,6 @@ public class DemoRunner implements CommandLineRunner {
     this.therapyProgressService = therapyProgressService;
     this.userRepository = userRepository;
     this.therapyDataInitializer = therapyDataInitializer;
-      // this.authenticationService = authenticationService;
-      // this.notificationService = notificationService;
   }
 
   @Override
@@ -87,111 +69,189 @@ public class DemoRunner implements CommandLineRunner {
     System.out.println("[DEMO] PhysioTrack Spring Boot started");
     System.out.println("=======================================");
 
-    System.out.println("\n[TEST] UC25: Registering Physiotherapist Account...");
-        User newPhysio = new User();
-        newPhysio.setUsername("JamesPhysio");
-        newPhysio.setEmail("james@physio.com");
-        newPhysio.setPassword("SecurePass123");
-        newPhysio.setClinicName("Sunway Medical");
-        
-        try {
-            User savedPhysio = userManagementService.registerPhysiotherapist(newPhysio);
-            System.out.println("   -> SUCCESS: Physio Registered. ID: " + savedPhysio.getId() + ", Role: " + savedPhysio.getRole());
-        } catch (Exception e) {
-            System.out.println("   -> FAILED: " + e.getMessage());
-        }
+    // IMPORTANT: don't close System.in (closing Scanner will close System.in)
+    Scanner scanner = new Scanner(System.in);
 
-        System.out.println("\n[TEST] UC26: Viewing Registered Users...");
-        List<User> allUsers = userManagementService.getAllUsers(null);
-        for (User u : allUsers) {
-            System.out.println("   -> User: " + u.getUsername() + " | Role: " + u.getRole() + " | Active: " + u.isActive());
-        }
+    boolean running = true;
+    while (running) {
+      printMainMenu();
 
-        System.out.println("\n[TEST] UC04: User Updates Profile...");
-        try {
-            User updateData = new User();
-            updateData.setPhone("+60123456789");
-            updateData.setAddress("Kuala Lumpur, Malaysia");
-            
-            User updatedUser = personalInfoService.updateProfile(1L, updateData);
-            System.out.println("   -> SUCCESS: Profile Updated.");
-            System.out.println("      New Phone: " + updatedUser.getPhone());
-            System.out.println("      New Address: " + updatedUser.getAddress());
-        } catch (Exception e) {
-            System.out.println("   -> FAILED: " + e.getMessage());
-        }
+      int choice = readInt(scanner, "Select a module (0 to Exit): ");
 
-        System.out.println("\n[TEST] UC05: User Changes Language Preference...");
-        try {
-            User langUser = personalInfoService.updateLanguage(1L, "ms"); // Change to Malay
-            System.out.println("   -> SUCCESS: Language changed to: " + langUser.getLanguagePreference());
-        } catch (Exception e) {
-            System.out.println("   -> FAILED: " + e.getMessage());
-        }
+      switch (choice) {
+        case 0:
+          running = false;
+          break;
 
-        System.out.println("\n[TEST] UC27: Admin Deactivates User...");
-        try {
-            User deactivatedUser = userManagementService.deactivateUser(1L);
-            System.out.println("   -> SUCCESS: User status is now Active? " + deactivatedUser.isActive());
-        } catch (Exception e) {
-            System.out.println("   -> FAILED: " + e.getMessage());
-        }
+        case 1:
+          demoUserManagement();
+          break;
 
-        demoTherapy();
+        case 2:
+          demoPersonalInfo();
+          break;
 
-        System.out.println("\n==========================================");
-        System.out.println("   DEMO COMPLETED");
-        System.out.println("==========================================");
+        case 3:
+          demoAppointmentPlaceholder();
+          break;
 
-    // ========= MODULE DEMOS =========
-    // Each module owner adds a method call here (keep it short + testable).
-    //
-    // demoAuthentication();
-    // demoAppointment();
-    // demoProgressTracking();
+        case 4:
+          demoNotificationPlaceholder();
+          break;
+
+        case 5:
+          demoPhysiotherapy(); // subset of therapy demo focused on PT
+          break;
+
+        case 6:
+          demoOccupationalTherapy(); // subset of therapy demo focused on OT
+          break;
+
+        case 7:
+          demoFirstTimeScreeningPlaceholder();
+          break;
+
+        case 8:
+          demoProgressTrackingPlaceholder();
+          break;
+
+        case 9:
+          demoJournalPlaceholder();
+          break;
+
+        case 10:
+          demoSummaryPlaceholder();
+          break;
+
+        default:
+          System.out.println("[ERROR] Invalid selection. Please choose 0-10.");
+      }
+
+      if (running) {
+        System.out.println("\n---------------------------------------");
+        System.out.println("Press ENTER to return to main menu...");
+        scanner.nextLine(); // consume pending newline if any
+        scanner.nextLine(); // wait for enter
+      }
+    }
+
+    System.out.println("\n==========================================");
+    System.out.println("   DEMO TERMINATED");
+    System.out.println("==========================================");
   }
 
-  // ========= SAMPLE DEMO METHOD TEMPLATE =========
-  // private void demoAppointment() {
-  //   System.out.println("\n--- [APPOINTMENT MODULE DEMO] ---");
-  //   appointmentService.createAppointment(...);
-  //   appointmentService.approveAppointment(...);
-  //   appointmentService.getSchedule(...);
-  //   appointmentService.cancelAppointment(...);
-  // }
+  // =========================
+  // MENU
+  // =========================
+  private void printMainMenu() {
+    System.out.println("\n============== MAIN MENU ==============");
+    System.out.println(" 1) User Management Module");
+    System.out.println(" 2) Manage User Personal Information");
+    System.out.println(" 3) Appointment Booking Module");
+    System.out.println(" 4) Notification Pushing Module");
+    System.out.println(" 5) Physiotherapy Module");
+    System.out.println(" 6) Occupational Therapy Module");
+    System.out.println(" 7) First Time Screening Module");
+    System.out.println(" 8) Patient Progress Tracking Module");
+    System.out.println(" 9) Manage Journal Module");
+    System.out.println("10) Summary Report Module");
+    System.out.println(" 0) Exit");
+    System.out.println("======================================");
+  }
 
-  private void demoTherapy() {
+  private int readInt(Scanner scanner, String prompt) {
+    while (true) {
+      System.out.print(prompt);
+      String line = scanner.nextLine().trim();
+      try {
+        return Integer.parseInt(line);
+      } catch (NumberFormatException e) {
+        System.out.println("[ERROR] Please enter a number.");
+      }
+    }
+  }
+
+  // =========================
+  // MODULE DEMOS
+  // =========================
+
+  // --- 1) User Management Module ---
+  private void demoUserManagement() {
     System.out.println("\n==========================================");
-    System.out.println("[TEST] THERAPY MODULE DEMO");
+    System.out.println("[TEST] USER MANAGEMENT MODULE DEMO");
     System.out.println("==========================================");
 
-    // Acting physiotherapist
-    User physio = userRepository.findAll().stream()
-            .filter(u -> "PHYSIO".equalsIgnoreCase(u.getRole()))
-            .findFirst()
-            .orElseThrow(() -> new RuntimeException("Physiotherapist not found"));
+    System.out.println("\n[TEST] UC25: Registering Physiotherapist Account...");
+    User newPhysio = new User();
+    newPhysio.setUsername("JamesPhysio");
+    newPhysio.setEmail("james@physio.com");
+    newPhysio.setPassword("SecurePass123");
+    newPhysio.setClinicName("Sunway Medical");
 
-    System.out.println("   -> Acting Physiotherapist: "
-            + physio.getUsername() + " (ID: " + physio.getId() + ")");
+    try {
+      User savedPhysio = userManagementService.registerPhysiotherapist(newPhysio);
+      System.out.println("   -> SUCCESS: Physio Registered. ID: " + savedPhysio.getId() + ", Role: " + savedPhysio.getRole());
+    } catch (Exception e) {
+      System.out.println("   -> FAILED: " + e.getMessage());
+    }
 
-    // Seed patients
+    System.out.println("\n[TEST] UC26: Viewing Registered Users...");
+    List<User> allUsers = userManagementService.getAllUsers(null);
+    for (User u : allUsers) {
+      System.out.println("   -> User: " + u.getUsername() + " | Role: " + u.getRole() + " | Active: " + u.isActive());
+    }
+
+    System.out.println("\n[TEST] UC27: Admin Deactivates User (User ID=1)...");
+    try {
+      User deactivatedUser = userManagementService.deactivateUser(1L);
+      System.out.println("   -> SUCCESS: User status is now Active? " + deactivatedUser.isActive());
+    } catch (Exception e) {
+      System.out.println("   -> FAILED: " + e.getMessage());
+    }
+  }
+
+  // --- 2) Manage User Personal Information ---
+  private void demoPersonalInfo() {
+    System.out.println("\n==========================================");
+    System.out.println("[TEST] PERSONAL INFO MODULE DEMO");
+    System.out.println("==========================================");
+
+    System.out.println("\n[TEST] UC04: User Updates Profile (User ID=1)...");
+    try {
+      User updateData = new User();
+      updateData.setPhone("+60123456789");
+      updateData.setAddress("Kuala Lumpur, Malaysia");
+
+      User updatedUser = personalInfoService.updateProfile(1L, updateData);
+      System.out.println("   -> SUCCESS: Profile Updated.");
+      System.out.println("      New Phone: " + updatedUser.getPhone());
+      System.out.println("      New Address: " + updatedUser.getAddress());
+    } catch (Exception e) {
+      System.out.println("   -> FAILED: " + e.getMessage());
+    }
+
+    System.out.println("\n[TEST] UC05: User Changes Language Preference (User ID=1)...");
+    try {
+      User langUser = personalInfoService.updateLanguage(1L, "ms");
+      System.out.println("   -> SUCCESS: Language changed to: " + langUser.getLanguagePreference());
+    } catch (Exception e) {
+      System.out.println("   -> FAILED: " + e.getMessage());
+    }
+  }
+
+  // --- 5) Physiotherapy Module (PT-focused demo) ---
+  private void demoPhysiotherapy() {
+    System.out.println("\n==========================================");
+    System.out.println("[TEST] PHYSIOTHERAPY MODULE DEMO (PT)");
+    System.out.println("==========================================");
+
+    User physio = findAnyPhysioOrThrow();
+
     User patientA = seedPatient("patientA", "patientA@test.com");
-    User patientB = seedPatient("patientB", "patientB@test.com");
 
-    System.out.println("   -> Patient A ID: " + patientA.getId());
-    System.out.println("   -> Patient B ID: " + patientB.getId());
-
-    // Seed therapy programs
-    PTProgram ptProgramA =
-            therapyDataInitializer.createPTProgram(patientA.getId());
-
-    OTProgram otProgramA =
-            therapyDataInitializer.createOTProgram(patientA.getId());
-
+    PTProgram ptProgramA = therapyDataInitializer.createPTProgram(patientA.getId());
     Long ptProgramAId = ptProgramA.getId();
-    Long otProgramAId = otProgramA.getId();
 
-    // ========= UC20 =========
     System.out.println("\n[TEST] UC20: Modify Patient’s Physiotherapy Activities...");
     PTActivity ptActivity = new PTActivity();
     ptActivity.setName("Arm Stretch");
@@ -199,14 +259,28 @@ public class DemoRunner implements CommandLineRunner {
 
     therapyManagementService.addPTActivity(ptProgramAId, ptActivity);
 
-    System.out.println("   -> SUCCESS: Physiotherapist '"
-            + physio.getUsername()
-            + "' added physiotherapy activity '"
-            + ptActivity.getName()
-            + "' to Patient A (ID: "
-            + patientA.getId() + ")");
+    System.out.println("   -> SUCCESS: Physio '" + physio.getUsername()
+        + "' added PT activity '" + ptActivity.getName()
+        + "' to Patient (ID: " + patientA.getId() + ")");
 
-    // ========= UC21 =========
+    System.out.println("\n[TEST] UC11: View Daily Physiotherapy Activities...");
+    therapyProgressService.getPTActivities(ptProgramAId)
+        .forEach(a -> System.out.println("   -> Activity: " + a.getName() + " | Completed: " + a.isCompleted()));
+  }
+
+  // --- 6) Occupational Therapy Module (OT-focused demo) ---
+  private void demoOccupationalTherapy() {
+    System.out.println("\n==========================================");
+    System.out.println("[TEST] OCCUPATIONAL THERAPY MODULE DEMO (OT)");
+    System.out.println("==========================================");
+
+    User physio = findAnyPhysioOrThrow();
+
+    User patientA = seedPatient("patientA", "patientA@test.com");
+
+    OTProgram otProgramA = therapyDataInitializer.createOTProgram(patientA.getId());
+    Long otProgramAId = otProgramA.getId();
+
     System.out.println("\n[TEST] UC21: Modify Patient’s Occupational Therapy Activities...");
     OTActivity otActivity = new OTActivity();
     otActivity.setName("Grip Practice");
@@ -214,42 +288,70 @@ public class DemoRunner implements CommandLineRunner {
 
     therapyManagementService.addOTActivity(otProgramAId, otActivity);
 
-    System.out.println("   -> SUCCESS: Physiotherapist '"
-            + physio.getUsername()
-            + "' added occupational therapy activity '"
-            + otActivity.getName()
-            + "' to Patient A (ID: "
-            + patientA.getId() + ")");
+    System.out.println("   -> SUCCESS: Physio '" + physio.getUsername()
+        + "' added OT activity '" + otActivity.getName()
+        + "' to Patient (ID: " + patientA.getId() + ")");
 
-    // ========= UC11 =========
-    System.out.println("\n[TEST] UC11: View Daily Physiotherapy Activities (Patient A)...");
-    therapyProgressService.getPTActivities(ptProgramAId)
-            .forEach(a ->
-                    System.out.println("   -> Activity: " + a.getName()
-                            + " | Completed: " + a.isCompleted())
-            );
-
-    // ========= UC12 =========
-    System.out.println("\n[TEST] UC12: View Daily Occupational Therapy Activities (Patient A)...");
+    System.out.println("\n[TEST] UC12: View Daily Occupational Therapy Activities...");
     therapyProgressService.getOTActivities(otProgramAId)
-            .forEach(a ->
-                    System.out.println("   -> Activity: " + a.getName()
-                            + " | Completed: " + a.isCompleted())
-            );
-}
+        .forEach(a -> System.out.println("   -> Activity: " + a.getName() + " | Completed: " + a.isCompleted()));
+  }
 
-private User seedPatient(String username, String email) {
+  // =========================
+  // PLACEHOLDERS FOR MODULES NOT IMPLEMENTED YET
+  // =========================
+  private void demoAppointmentPlaceholder() {
+    System.out.println("\n[INFO] Appointment Booking Module demo not wired yet.");
+    System.out.println("       Add AppointmentService injection + demo method here.");
+  }
+
+  private void demoNotificationPlaceholder() {
+    System.out.println("\n[INFO] Notification Pushing Module demo not wired yet.");
+    System.out.println("       Add NotificationService injection + demo method here.");
+  }
+
+  private void demoFirstTimeScreeningPlaceholder() {
+    System.out.println("\n[INFO] First Time Screening Module demo not wired yet.");
+    System.out.println("       Add ScreeningService injection + demo method here.");
+  }
+
+  private void demoProgressTrackingPlaceholder() {
+    System.out.println("\n[INFO] Patient Progress Tracking Module demo not wired yet.");
+    System.out.println("       Add ProgressTrackingService injection + demo method here.");
+  }
+
+  private void demoJournalPlaceholder() {
+    System.out.println("\n[INFO] Manage Journal Module demo not wired yet.");
+    System.out.println("       Add JournalService injection + demo method here.");
+  }
+
+  private void demoSummaryPlaceholder() {
+    System.out.println("\n[INFO] Summary Report Module demo not wired yet.");
+    System.out.println("       Add SummaryService injection + demo method here.");
+  }
+
+  // =========================
+  // HELPERS
+  // =========================
+  private User findAnyPhysioOrThrow() {
     return userRepository.findAll().stream()
-            .filter(u -> u.getEmail().equalsIgnoreCase(email))
-            .findFirst()
-            .orElseGet(() -> {
-                User patient = new User();
-                patient.setUsername(username);
-                patient.setEmail(email);
-                patient.setPassword("Password123");
-                patient.setRole("PATIENT");
-                patient.setActive(true);
-                return userRepository.save(patient);
-            });
-}
+        .filter(u -> "PHYSIO".equalsIgnoreCase(u.getRole()))
+        .findFirst()
+        .orElseThrow(() -> new RuntimeException("Physiotherapist not found (seed a PHYSIO user first)."));
+  }
+
+  private User seedPatient(String username, String email) {
+    return userRepository.findAll().stream()
+        .filter(u -> u.getEmail() != null && u.getEmail().equalsIgnoreCase(email))
+        .findFirst()
+        .orElseGet(() -> {
+          User patient = new User();
+          patient.setUsername(username);
+          patient.setEmail(email);
+          patient.setPassword("Password123");
+          patient.setRole("PATIENT");
+          patient.setActive(true);
+          return userRepository.save(patient);
+        });
+  }
 }
