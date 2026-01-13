@@ -5,6 +5,14 @@ import java.util.List;
 import com.physiotrack.usermanagement.model.User;
 import com.physiotrack.usermanagement.service.UserManagementService;
 import com.physiotrack.personalinfo.service.PersonalInfoService;
+import com.physiotrack.usermanagement.repository.UserRepository;
+import com.physiotrack.therapy.model.PTProgram;
+import com.physiotrack.therapy.model.PTActivity;
+import com.physiotrack.therapy.model.OTProgram;
+import com.physiotrack.therapy.api.TherapyManagementService;
+import com.physiotrack.therapy.api.TherapyProgressService;
+import com.physiotrack.therapy.init.TherapyDataInitializer;
+import com.physiotrack.therapy.model.OTActivity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -36,6 +44,11 @@ public class DemoRunner implements CommandLineRunner {
 
   private final UserManagementService userManagementService;
   private final PersonalInfoService personalInfoService;
+  private final TherapyManagementService therapyManagementService;
+  private final TherapyProgressService therapyProgressService;
+  private final UserRepository userRepository;
+  private final TherapyDataInitializer therapyDataInitializer;
+
 
   // ========= MODULE SERVICE INTERFACES (inject here) =========
   // Add interfaces from each module (service interfaces live in that module)
@@ -50,14 +63,20 @@ public class DemoRunner implements CommandLineRunner {
   @Autowired
   public DemoRunner(
     UserManagementService userManagementService,
-    PersonalInfoService personalInfoService
-      // AppointmentService appointmentService,
+    PersonalInfoService personalInfoService,
+    TherapyManagementService therapyManagementService,
+    TherapyProgressService therapyProgressService,
+    UserRepository userRepository,
+    TherapyDataInitializer therapyDataInitializer
       // AuthenticationService authenticationService,
       // NotificationService notificationService
   ) {
     this.userManagementService = userManagementService;
     this.personalInfoService = personalInfoService;
-      // this.appointmentService = appointmentService;
+    this.therapyManagementService = therapyManagementService;
+    this.therapyProgressService = therapyProgressService;
+    this.userRepository = userRepository;
+    this.therapyDataInitializer = therapyDataInitializer;
       // this.authenticationService = authenticationService;
       // this.notificationService = notificationService;
   }
@@ -118,6 +137,8 @@ public class DemoRunner implements CommandLineRunner {
             System.out.println("   -> FAILED: " + e.getMessage());
         }
 
+        demoTherapy();
+
         System.out.println("\n==========================================");
         System.out.println("   DEMO COMPLETED");
         System.out.println("==========================================");
@@ -138,4 +159,97 @@ public class DemoRunner implements CommandLineRunner {
   //   appointmentService.getSchedule(...);
   //   appointmentService.cancelAppointment(...);
   // }
+
+  private void demoTherapy() {
+    System.out.println("\n==========================================");
+    System.out.println("[TEST] THERAPY MODULE DEMO");
+    System.out.println("==========================================");
+
+    // Acting physiotherapist
+    User physio = userRepository.findAll().stream()
+            .filter(u -> "PHYSIO".equalsIgnoreCase(u.getRole()))
+            .findFirst()
+            .orElseThrow(() -> new RuntimeException("Physiotherapist not found"));
+
+    System.out.println("   -> Acting Physiotherapist: "
+            + physio.getUsername() + " (ID: " + physio.getId() + ")");
+
+    // Seed patients
+    User patientA = seedPatient("patientA", "patientA@test.com");
+    User patientB = seedPatient("patientB", "patientB@test.com");
+
+    System.out.println("   -> Patient A ID: " + patientA.getId());
+    System.out.println("   -> Patient B ID: " + patientB.getId());
+
+    // Seed therapy programs
+    PTProgram ptProgramA =
+            therapyDataInitializer.createPTProgram(patientA.getId());
+
+    OTProgram otProgramA =
+            therapyDataInitializer.createOTProgram(patientA.getId());
+
+    Long ptProgramAId = ptProgramA.getId();
+    Long otProgramAId = otProgramA.getId();
+
+    // ========= UC20 =========
+    System.out.println("\n[TEST] UC20: Modify Patient’s Physiotherapy Activities...");
+    PTActivity ptActivity = new PTActivity();
+    ptActivity.setName("Arm Stretch");
+    ptActivity.setDescription("Stretch arms slowly for 5 minutes");
+
+    therapyManagementService.addPTActivity(ptProgramAId, ptActivity);
+
+    System.out.println("   -> SUCCESS: Physiotherapist '"
+            + physio.getUsername()
+            + "' added physiotherapy activity '"
+            + ptActivity.getName()
+            + "' to Patient A (ID: "
+            + patientA.getId() + ")");
+
+    // ========= UC21 =========
+    System.out.println("\n[TEST] UC21: Modify Patient’s Occupational Therapy Activities...");
+    OTActivity otActivity = new OTActivity();
+    otActivity.setName("Grip Practice");
+    otActivity.setDescription("Practice hand grip using soft ball");
+
+    therapyManagementService.addOTActivity(otProgramAId, otActivity);
+
+    System.out.println("   -> SUCCESS: Physiotherapist '"
+            + physio.getUsername()
+            + "' added occupational therapy activity '"
+            + otActivity.getName()
+            + "' to Patient A (ID: "
+            + patientA.getId() + ")");
+
+    // ========= UC11 =========
+    System.out.println("\n[TEST] UC11: View Daily Physiotherapy Activities (Patient A)...");
+    therapyProgressService.getPTActivities(ptProgramAId)
+            .forEach(a ->
+                    System.out.println("   -> Activity: " + a.getName()
+                            + " | Completed: " + a.isCompleted())
+            );
+
+    // ========= UC12 =========
+    System.out.println("\n[TEST] UC12: View Daily Occupational Therapy Activities (Patient A)...");
+    therapyProgressService.getOTActivities(otProgramAId)
+            .forEach(a ->
+                    System.out.println("   -> Activity: " + a.getName()
+                            + " | Completed: " + a.isCompleted())
+            );
+}
+
+private User seedPatient(String username, String email) {
+    return userRepository.findAll().stream()
+            .filter(u -> u.getEmail().equalsIgnoreCase(email))
+            .findFirst()
+            .orElseGet(() -> {
+                User patient = new User();
+                patient.setUsername(username);
+                patient.setEmail(email);
+                patient.setPassword("Password123");
+                patient.setRole("PATIENT");
+                patient.setActive(true);
+                return userRepository.save(patient);
+            });
+}
 }
