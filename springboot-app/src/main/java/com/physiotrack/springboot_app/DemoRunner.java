@@ -96,35 +96,31 @@ public class DemoRunner implements CommandLineRunner {
           break;
 
         case 4:
-          demoNotificationPlaceholder();
-          break;
-
-        case 5:
           demoPhysiotherapy(); // subset of therapy demo focused on PT
           break;
 
-        case 6:
+        case 5:
           demoOccupationalTherapy(); // subset of therapy demo focused on OT
           break;
 
-        case 7:
+        case 6:
           demoFirstTimeScreeningPlaceholder();
           break;
 
-        case 8:
+        case 7:
           demoProgressTrackingPlaceholder();
           break;
 
-        case 9:
+        case 8:
           demoJournalPlaceholder();
           break;
 
-        case 10:
+        case 9:
           demoSummaryPlaceholder();
           break;
 
         default:
-          System.out.println("[ERROR] Invalid selection. Please choose 0-10.");
+          System.out.println("[ERROR] Invalid selection. Please choose 0-9.");
       }
 
       if (running) {
@@ -148,13 +144,12 @@ public class DemoRunner implements CommandLineRunner {
     System.out.println(" 1) User Management Module");
     System.out.println(" 2) Manage User Personal Information");
     System.out.println(" 3) Appointment Booking Module");
-    System.out.println(" 4) Notification Pushing Module");
-    System.out.println(" 5) Physiotherapy Module");
-    System.out.println(" 6) Occupational Therapy Module");
-    System.out.println(" 7) First Time Screening Module");
-    System.out.println(" 8) Patient Progress Tracking Module");
-    System.out.println(" 9) Manage Journal Module");
-    System.out.println("10) Summary Report Module");
+    System.out.println(" 4) Physiotherapy Module");
+    System.out.println(" 5) Occupational Therapy Module");
+    System.out.println(" 6) First Time Screening Module");
+    System.out.println(" 7) Patient Progress Tracking Module");
+    System.out.println(" 8) Manage Journal Module");
+    System.out.println(" 9) Summary Report Module");
     System.out.println(" 0) Exit");
     System.out.println("======================================");
   }
@@ -303,11 +298,6 @@ public class DemoRunner implements CommandLineRunner {
   private void demoAppointmentPlaceholder() {
     System.out.println("\n[INFO] Appointment Booking Module demo not wired yet.");
     System.out.println("       Add AppointmentService injection + demo method here.");
-  }
-
-  private void demoNotificationPlaceholder() {
-    System.out.println("\n[INFO] Notification Pushing Module demo not wired yet.");
-    System.out.println("       Add NotificationService injection + demo method here.");
   }
 
   private void demoFirstTimeScreeningPlaceholder() {
