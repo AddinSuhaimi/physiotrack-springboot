@@ -1,9 +1,13 @@
 package com.physiotrack.therapy.api;
 
 import com.physiotrack.therapy.model.PTActivity;
+import com.physiotrack.therapy.model.PTProgram;
 import com.physiotrack.therapy.model.OTActivity;
+import com.physiotrack.therapy.model.OTProgram;
 
 public interface TherapyManagementService {
+    PTProgram findPTProgramByPatientId(Long patientId);
+    OTProgram findOTProgramByPatientId(Long patientId);
 
     // UC20 – Modify physiotherapy program
     void addPTActivity(Long programId, PTActivity activity);

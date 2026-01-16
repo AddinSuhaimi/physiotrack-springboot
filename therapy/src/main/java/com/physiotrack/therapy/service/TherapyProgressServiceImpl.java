@@ -6,6 +6,10 @@ import com.physiotrack.therapy.model.PTProgram;
 import com.physiotrack.therapy.model.OTActivity;
 import com.physiotrack.therapy.model.OTProgram;
 import com.physiotrack.therapy.repository.PTProgramRepository;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
 import com.physiotrack.therapy.repository.OTProgramRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,11 +17,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
-@Transactional (readOnly = true)
 public class TherapyProgressServiceImpl implements TherapyProgressService {
 
     private final PTProgramRepository ptProgramRepository;
     private final OTProgramRepository otProgramRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public TherapyProgressServiceImpl(
             PTProgramRepository ptProgramRepository,
@@ -25,46 +31,58 @@ public class TherapyProgressServiceImpl implements TherapyProgressService {
         this.ptProgramRepository = ptProgramRepository;
         this.otProgramRepository = otProgramRepository;
     }
-
+    
     @Override
+    @Transactional (readOnly = true)
     public List<PTActivity> getPTActivities(Long programId) {
+        entityManager.clear(); // Force reload from DB
         PTProgram program = ptProgramRepository.findById(programId)
                 .orElseThrow(() -> new RuntimeException("PT Program not found"));
-
-        program.getActivities().size();   // 🔴 FORCE INITIALIZATION
         return program.getActivities();
     }
 
 
     @Override
-    public void markPTCompleted(Long programId, Long activityId) {
-        PTProgram program = ptProgramRepository.findById(programId)
-                .orElseThrow(() -> new RuntimeException("PT Program not found"));
+    @Transactional
+    public void markPTCompleted(Long ptProgramId, Long activityId) {
+        PTProgram program = ptProgramRepository.findById(ptProgramId)
+        .orElseThrow(() -> new RuntimeException("PT Program not found"));
 
-        program.getActivities().stream()
-                .filter(a -> a.getId().equals(activityId))
-                .findFirst()
-                .ifPresent(a -> a.setCompleted(true));
-    }
+        PTActivity activity = program.getActivities().stream()
+        .filter(a -> a.getId().equals(activityId))
+        .findFirst()
+        .orElseThrow(() -> new RuntimeException("Activity not found"));
+
+        activity.setCompleted(true);
+        ptProgramRepository.saveAndFlush(program); 
+
+        entityManager.clear();
+}
 
     @Override
+    @Transactional (readOnly = true)
     public List<OTActivity> getOTActivities(Long programId) {
+        entityManager.clear(); // Force reload from DB
         OTProgram program = otProgramRepository.findById(programId)
                 .orElseThrow(() -> new RuntimeException("OT Program not found"));
-
-        program.getActivities().size();   // 🔴 FORCE INITIALIZATION
         return program.getActivities();
     }
 
 
     @Override
-    public void markOTCompleted(Long programId, Long activityId) {
-        OTProgram program = otProgramRepository.findById(programId)
-                .orElseThrow(() -> new RuntimeException("OT Program not found"));
+    @Transactional
+    public void markOTCompleted(Long otProgramId, Long activityId) {
+        OTProgram program = otProgramRepository.findById(otProgramId)
+        .orElseThrow(() -> new RuntimeException("OT Program not found"));
 
-        program.getActivities().stream()
-                .filter(a -> a.getId().equals(activityId))
-                .findFirst()
-                .ifPresent(a -> a.setCompleted(true));
-    }
+        OTActivity activity = program.getActivities().stream()
+        .filter(a -> a.getId().equals(activityId))
+        .findFirst()
+        .orElseThrow(() -> new RuntimeException("Activity not found"));
+
+        activity.setCompleted(true);
+        otProgramRepository.saveAndFlush(program); 
+
+        entityManager.clear();
+}
 }
