@@ -12,7 +12,9 @@ public class SummaryReport {
     private Long id;
 
     private Long patientId;
+    @Column(name = "month_num")
     private int month; // 1-12
+    @Column(name = "year_num")
     private int year;
 
     @Column(length = 4000)
