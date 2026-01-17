@@ -22,6 +22,10 @@ import com.physiotrack.therapy.init.TherapyDataInitializer;
 import com.physiotrack.appointment.model.Appointment;
 import com.physiotrack.appointment.service.AppointmentService;
 import com.physiotrack.appointment.service.ScheduleService;
+import com.physiotrack.journal.api.JournalService;
+import com.physiotrack.journal.model.Journal;
+import com.physiotrack.summary.api.SummaryService;
+import com.physiotrack.summary.model.SummaryReport;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -50,6 +54,9 @@ public class DemoRunner implements CommandLineRunner {
   private final TherapyProgressService therapyProgressService;
   private final TherapyDataInitializer therapyDataInitializer;
 
+  private final JournalService journalService;
+  private final SummaryService summaryService;
+
   private final AppointmentService appointmentService;
   private final ScheduleService scheduleService;
 
@@ -63,6 +70,8 @@ public class DemoRunner implements CommandLineRunner {
       PersonalInfoService personalInfoService,
       TherapyManagementService therapyManagementService,
       TherapyProgressService therapyProgressService,
+      JournalService journalService,
+      SummaryService summaryService,
       UserRepository userRepository,
       TherapyDataInitializer therapyDataInitializer,
       AppointmentService appointmentService,
@@ -72,6 +81,8 @@ public class DemoRunner implements CommandLineRunner {
     this.personalInfoService = personalInfoService;
     this.therapyManagementService = therapyManagementService;
     this.therapyProgressService = therapyProgressService;
+    this.journalService = journalService;
+    this.summaryService = summaryService;
     this.userRepository = userRepository;
     this.therapyDataInitializer = therapyDataInitializer;
     this.appointmentService = appointmentService;
@@ -939,13 +950,57 @@ public class DemoRunner implements CommandLineRunner {
   }
 
   private void demoJournalPlaceholder() {
-    System.out.println("\n[INFO] Manage Journal Module demo not wired yet.");
-    System.out.println("       Add JournalService injection + demo method here.");
+    System.out.println("\n[DEMO] Journal Module (simple demo)");
+    try {
+      User patient = findAnyPatientOrThrow();
+      System.out.println(" Using patient: " + patient.getUsername() + " (id=" + patient.getId() + ")");
+
+      Journal j = new Journal();
+      j.setPatientId(patient.getId());
+      j.setTitle("Demo Entry from DemoRunner");
+      j.setWeather("Sunny");
+      j.setFeeling("Okay");
+      j.setHealthCondition("Stable");
+      j.setComment("This journal was created by DemoRunner for quick testing.");
+
+      Journal created = journalService.createJournal(patient.getId(), j);
+      System.out.println("   -> Created journal id=" + created.getId());
+
+      System.out.println("   -> Listing journals for patient:");
+      java.util.List<Journal> list = journalService.getJournalsForPatient(patient.getId(), patient.getId());
+      for (Journal item : list) {
+        System.out.println("      - [" + item.getId() + "] " + item.getTitle() + " (shared=" + item.isSharedWithPhysio() + ")");
+      }
+    } catch (Exception e) {
+      System.out.println("   -> FAILED: " + e.getMessage());
+    }
   }
 
   private void demoSummaryPlaceholder() {
-    System.out.println("\n[INFO] Summary Report Module demo not wired yet.");
-    System.out.println("       Add SummaryService injection + demo method here.");
+    System.out.println("\n[DEMO] Summary Module (simple demo)");
+    try {
+      User patient = findAnyPatientOrThrow();
+      System.out.println(" Using patient: " + patient.getUsername() + " (id=" + patient.getId() + ")");
+
+      java.util.List<SummaryReport> recent = summaryService.getRecentSummaries(patient.getId(), patient.getId());
+      System.out.println("   -> Recent summaries: " + recent.size());
+      for (SummaryReport sr : recent) {
+        System.out.println("      - [" + sr.getId() + "] " + sr.getMonth() + "/" + sr.getYear() + " -> " + (sr.getSummaryData() != null ? sr.getSummaryData().substring(0, Math.min(80, sr.getSummaryData().length())) : "(empty)"));
+      }
+
+      if (recent.isEmpty()) {
+        System.out.println("   -> No summaries found. Trying to fetch current month summary...");
+        java.time.LocalDate now = java.time.LocalDate.now();
+        SummaryReport monthly = summaryService.getMonthlySummary(patient.getId(), patient.getId(), now.getMonthValue(), now.getYear());
+        if (monthly != null) {
+          System.out.println("      -> Found summary id=" + monthly.getId() + ", data length=" + (monthly.getSummaryData() != null ? monthly.getSummaryData().length() : 0));
+        } else {
+          System.out.println("      -> No monthly summary available.");
+        }
+      }
+    } catch (Exception e) {
+      System.out.println("   -> FAILED: " + e.getMessage());
+    }
   }
 
   // =========================
