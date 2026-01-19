@@ -26,6 +26,8 @@ import com.physiotrack.journal.api.JournalService;
 import com.physiotrack.journal.model.Journal;
 import com.physiotrack.summary.api.SummaryService;
 import com.physiotrack.summary.model.SummaryReport;
+import com.physiotrack.progresstracking.model.TreatmentReport;
+import com.physiotrack.progresstracking.service.PatientProgressTrackingService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -60,6 +62,8 @@ public class DemoRunner implements CommandLineRunner {
   private final AppointmentService appointmentService;
   private final ScheduleService scheduleService;
 
+  private final PatientProgressTrackingService patientProgressTrackingService;
+
   // Temporary direct repo access for seeding/demo data
   private final UserRepository userRepository;
 
@@ -75,7 +79,8 @@ public class DemoRunner implements CommandLineRunner {
       UserRepository userRepository,
       TherapyDataInitializer therapyDataInitializer,
       AppointmentService appointmentService,
-      ScheduleService scheduleService
+      ScheduleService scheduleService,
+      PatientProgressTrackingService patientProgressTrackingService
   ) {
     this.userManagementService = userManagementService;
     this.personalInfoService = personalInfoService;
@@ -87,6 +92,7 @@ public class DemoRunner implements CommandLineRunner {
     this.therapyDataInitializer = therapyDataInitializer;
     this.appointmentService = appointmentService;
     this.scheduleService = scheduleService;
+    this.patientProgressTrackingService = patientProgressTrackingService;
   }
 
   @Override
@@ -134,7 +140,7 @@ public class DemoRunner implements CommandLineRunner {
           break;
 
         case 7:
-          demoProgressTrackingPlaceholder();
+          demoProgressTracking(scanner);
           break;
 
         case 8:
@@ -944,10 +950,37 @@ public class DemoRunner implements CommandLineRunner {
     System.out.println("       Add ScreeningService injection + demo method here.");
   }
 
-  private void demoProgressTrackingPlaceholder() {
-    System.out.println("\n[INFO] Patient Progress Tracking Module demo not wired yet.");
-    System.out.println("       Add ProgressTrackingService injection + demo method here.");
+  private void demoProgressTracking(Scanner scanner) {
+      System.out.println("\n==========================================");
+      System.out.println("[DEMO] Patient Progress Tracking Module");
+      System.out.println("==========================================");
+      
+      User patient = selectUser(scanner, "PATIENT");
+
+      boolean loop = true;
+      while (loop) {
+          System.out.println("\n--- Progress Tracking Menu ---");
+          System.out.println("1) View Patient Details");
+          System.out.println("2) View Patient Progress Reports");
+          System.out.println("3) Create Treatment Report");
+          System.out.println("0) Back to Main Menu");
+
+          int choice = readInt(scanner, "Select option: ");
+
+          switch (choice) {
+              case 0 -> loop = false;
+
+              case 1 -> viewPatientDetails(patient);
+
+              case 2 -> viewProgressReports(patient);
+
+              case 3 -> createTreatmentReport(scanner, patient);
+
+              default -> System.out.println("[ERROR] Invalid selection.");
+          }
+      }
   }
+
 
   private void demoJournalPlaceholder() {
     System.out.println("\n[DEMO] Journal Module (simple demo)");
@@ -1234,4 +1267,61 @@ public class DemoRunner implements CommandLineRunner {
     }
     return therapyDataInitializer.createOTProgram(patientId);
   }
+
+  private void viewPatientDetails(User patient) {
+    System.out.println("\n[Patient Details Information]");
+    System.out.println("ID: " + patient.getId());
+    System.out.println("Username: " + patient.getUsername());
+    System.out.println("Email: " + patient.getEmail());
+    System.out.println("Phone: " + patient.getPhone());
+    System.out.println("Address: " + patient.getAddress());
+    System.out.println("Language Preference: " + patient.getLanguagePreference());
+    System.out.println("Active: " + patient.isActive());
+  }
+
+  private void viewProgressReports(User patient) {
+    System.out.println("\n[Patient Progress Reports]");
+
+    List<TreatmentReport> reports = patientProgressTrackingService.getPatientReports(patient.getId());
+
+    if (reports.isEmpty()) {
+        System.out.println("   -> No reports found for this patient.");
+        return;
+    }
+
+    for (TreatmentReport report : reports) {
+        System.out.println("ID: " + report.getId()
+                + " | Title: " + report.getReportTitle()
+                + " | Type: " + report.getReportType()
+                + " | Activity: " + report.getActivity()
+                + " | Performance: " + report.getPerformance()
+                + " | Date: " + (report.getDateTime() != null ? report.getDateTime() : "(not set)")
+        );
+    }
+  }
+
+  private void createTreatmentReport(Scanner scanner, User patient) {
+    System.out.println("\n[Create Treatment Report for Patient: " + patient.getUsername() + " (ID: " + patient.getId() + ")]");
+
+    String title = readString(scanner, "Enter report title: ");
+    String type = readString(scanner, "Enter report type: ");
+    String activity = readString(scanner, "Enter activity: ");
+    int performance = readInt(scanner, "Enter performance score (0-100): ");
+
+    TreatmentReport report = new TreatmentReport();
+    report.setReportTitle(title);
+    report.setReportType(type);
+    report.setActivity(activity);
+    report.setPerformance(performance);
+    report.setDateTime(LocalDateTime.now());
+    report.setPatientId(patient.getId());
+    
+    try {
+        TreatmentReport saved = patientProgressTrackingService.createReport(report);
+        System.out.println("   -> SUCCESS: Report created with ID: " + saved.getId());
+    } catch (Exception e) {
+        System.out.println("   -> FAILED: " + e.getMessage());
+    }
+  }
+
 }
