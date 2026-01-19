@@ -47,8 +47,12 @@
 			<groupId>com.physiotrack</groupId>
 			<artifactId>appointment</artifactId>
 			<version>1.0-SNAPSHOT</version>
-		</dependency>
-		
+		</dependency>		
+        <dependency>
+            <groupId>com.physiotrack</groupId>
+            <artifactId>test</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>

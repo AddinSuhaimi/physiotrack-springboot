@@ -6,27 +6,29 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
-import com.physiotrack.usermanagement.model.User;
-import com.physiotrack.usermanagement.service.UserManagementService;
-import com.physiotrack.personalinfo.service.PersonalInfoService;
-import com.physiotrack.usermanagement.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
 
-// Therapy module imports (provided by teammate)
-import com.physiotrack.therapy.model.PTProgram;
-import com.physiotrack.therapy.model.PTActivity;
-import com.physiotrack.therapy.model.OTProgram;
-import com.physiotrack.therapy.model.OTActivity;
-import com.physiotrack.therapy.api.TherapyManagementService;
-import com.physiotrack.therapy.api.TherapyProgressService;
-import com.physiotrack.therapy.init.TherapyDataInitializer;
 import com.physiotrack.appointment.model.Appointment;
 import com.physiotrack.appointment.service.AppointmentService;
 import com.physiotrack.appointment.service.ScheduleService;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.stereotype.Component;
-import org.springframework.core.annotation.Order;
+import com.physiotrack.personalinfo.service.PersonalInfoService;
+import com.physiotrack.test.model.Question;
+import com.physiotrack.test.service.TestManageService;
+import com.physiotrack.test.service.TestService;
+import com.physiotrack.therapy.api.TherapyManagementService;
+import com.physiotrack.therapy.api.TherapyProgressService;
+import com.physiotrack.therapy.init.TherapyDataInitializer;
+import com.physiotrack.therapy.model.OTActivity;
+import com.physiotrack.therapy.model.OTProgram;
+import com.physiotrack.therapy.model.PTActivity;
+// Therapy module imports (provided by teammate)
+import com.physiotrack.therapy.model.PTProgram;
+import com.physiotrack.usermanagement.model.User;
+import com.physiotrack.usermanagement.repository.UserRepository;
+import com.physiotrack.usermanagement.service.UserManagementService;
 
 /**
  * INTERACTIVE DemoRunner (Console Menu)
@@ -38,7 +40,7 @@ import org.springframework.core.annotation.Order;
  * Note:
  * - This class should NOT contain business logic. It should only call services and print outputs.
  */
-@Order(2)
+@Order(3)
 @Component
 public class DemoRunner implements CommandLineRunner {
 
@@ -53,6 +55,10 @@ public class DemoRunner implements CommandLineRunner {
   private final AppointmentService appointmentService;
   private final ScheduleService scheduleService;
 
+  // First Time Screening Module
+  private final TestService testService;
+  private final TestManageService testManageService;
+
   // Temporary direct repo access for seeding/demo data
   private final UserRepository userRepository;
 
@@ -66,7 +72,9 @@ public class DemoRunner implements CommandLineRunner {
       UserRepository userRepository,
       TherapyDataInitializer therapyDataInitializer,
       AppointmentService appointmentService,
-      ScheduleService scheduleService
+      ScheduleService scheduleService,
+      TestService testService,
+      TestManageService testManageService
   ) {
     this.userManagementService = userManagementService;
     this.personalInfoService = personalInfoService;
@@ -76,6 +84,8 @@ public class DemoRunner implements CommandLineRunner {
     this.therapyDataInitializer = therapyDataInitializer;
     this.appointmentService = appointmentService;
     this.scheduleService = scheduleService;
+    this.testService = testService;
+    this.testManageService = testManageService;
   }
 
   @Override
@@ -119,7 +129,7 @@ public class DemoRunner implements CommandLineRunner {
           break;
 
         case 6:
-          demoFirstTimeScreeningPlaceholder();
+          demoFirstTimeScreeningPlaceholder(scanner);
           break;
 
         case 7:
@@ -559,9 +569,37 @@ public class DemoRunner implements CommandLineRunner {
   // PLACEHOLDERS FOR MODULES NOT IMPLEMENTED YET
   // =========================
 
-  private void demoFirstTimeScreeningPlaceholder() {
-    System.out.println("\n[INFO] First Time Screening Module demo not wired yet.");
-    System.out.println("       Add ScreeningService injection + demo method here.");
+  private void demoFirstTimeScreeningPlaceholder(Scanner scanner) {
+      boolean loop = true;
+
+      while (loop) {
+          System.out.println("\n==========================================");
+          System.out.println("FIRST TIME SCREENING MODULE");
+          System.out.println("==========================================");
+          System.out.println("1) Start Screening Test");
+          System.out.println("2) View Questions");
+          System.out.println("3) Add Question");
+          System.out.println("4) Edit Question");
+          System.out.println("5) Remove Question");
+          System.out.println("0) Back");
+          System.out.println("------------------------------------------");
+
+          int choice = readInt(scanner, "Select: ");
+
+          try {
+              switch (choice) {
+                  case 1 -> startScreeningTest();
+                  case 2 -> displayQuestionList();
+                  case 3 -> addQuestion(scanner);
+                  case 4 -> editQuestion(scanner);
+                  case 5 -> removeQuestion(scanner);
+                  case 0 -> loop = false;
+                  default -> System.out.println("[ERROR] Invalid selection.");
+              }
+          } catch (Exception e) {
+              System.out.println("[FAILED] " + e.getMessage());
+          }
+      }
   }
 
   private void demoProgressTrackingPlaceholder() {
@@ -638,7 +676,7 @@ public class DemoRunner implements CommandLineRunner {
           patient.setRole("PATIENT");
           patient.setActive(true);
           return userRepository.save(patient);
-        });
+    });
   }
 
   private void printAppointment(Appointment a) {
@@ -758,5 +796,116 @@ public class DemoRunner implements CommandLineRunner {
 
     return slots.get(choice - 1);
   }
+
+  private void startScreeningTest() {
+    System.out.println("\n[TEST] Starting First Time Screening...");
+    int score = testService.evaluate();
+    
+    // Map score to severity
+    String severity;
+    if (score <= 1) {
+        severity = "Minimal";
+    } else if (score <= 3) {
+        severity = "Mild";
+    } else if (score <= 5) {
+        severity = "Moderate";
+    } else {
+        severity = "Severe";
+    }
+
+    System.out.println("[RESULT] Screening completed.");
+    System.out.println("         Score = " + score);
+    System.out.println("         Severity Level = " + severity);
+  }
+
+  private void displayQuestionList() {
+    List<Question> questions = testManageService.displayQuestionList();
+
+    if (questions.isEmpty()) {
+        System.out.println("[INFO] No questions found.");
+        return;
+    }
+
+    System.out.println("\nScreening Questions:");
+    for (int i = 0; i < questions.size(); i++) {
+        System.out.println((i + 1) + ") " + questions.get(i).getQuestionDesc());
+    }
+  }
+
+  private void addQuestion(Scanner scanner) {
+    System.out.println("\n[ADD QUESTION]");
+
+    String desc = readString(scanner, "Enter question description: ");
+    String cat  = readString(scanner, "Enter question category: ");
+
+    Question q = new Question();
+    q.setQuestionDesc(desc);
+    q.setQuestionCat(cat);
+
+    testManageService.addQuestion(q);
+    System.out.println("[OK] Question added.");
+  }
+
+  private void editQuestion(Scanner scanner) {
+      List<Question> questions = testManageService.displayQuestionList();
+
+      if (questions.isEmpty()) {
+          System.out.println("[INFO] No questions available to edit.");
+          return;
+      }
+
+      // Display questions with numbering
+      System.out.println("\nScreening Questions:");
+      for (int i = 0; i < questions.size(); i++) {
+          System.out.println((i + 1) + ") " + questions.get(i).getQuestionDesc());
+      }
+
+      // Ask user for number instead of ID
+      int number = readInt(scanner, "Enter question number to edit (1-" + questions.size() + "): ");
+      if (number < 1 || number > questions.size()) {
+          System.out.println("[ERROR] Invalid selection.");
+          return;
+      }
+
+      Question selectedQuestion = questions.get(number - 1);
+
+      String newDesc = readString(scanner, "Enter new description: ");
+      String newCat  = readString(scanner, "Enter new category: ");
+
+      selectedQuestion.setQuestionDesc(newDesc);
+      selectedQuestion.setQuestionCat(newCat);
+
+      testManageService.editQuestion(selectedQuestion);
+      System.out.println("[OK] Question updated.");
+  }
+
+  private void removeQuestion(Scanner scanner) {
+      List<Question> questions = testManageService.displayQuestionList();
+
+      if (questions.isEmpty()) {
+          System.out.println("[INFO] No questions available to remove.");
+          return;
+      }
+
+      // Display questions with numbering
+      System.out.println("\nScreening Questions:");
+      for (int i = 0; i < questions.size(); i++) {
+          System.out.println((i + 1) + ") " + questions.get(i).getQuestionDesc());
+      }
+
+      // Ask user for number instead of ID
+      int number = readInt(scanner, "Enter question number to remove (1-" + questions.size() + "): ");
+      if (number < 1 || number > questions.size()) {
+          System.out.println("[ERROR] Invalid selection.");
+          return;
+      }
+
+      Question selectedQuestion = questions.get(number - 1);
+
+      testManageService.removeQuestion(selectedQuestion);
+      System.out.println("[OK] Question removed.");
+  }
+
+
 
 }
