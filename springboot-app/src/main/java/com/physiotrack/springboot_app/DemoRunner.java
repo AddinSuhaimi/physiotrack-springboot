@@ -6,29 +6,34 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.core.annotation.Order;
-import org.springframework.stereotype.Component;
-
-import com.physiotrack.appointment.model.Appointment;
-import com.physiotrack.appointment.service.AppointmentService;
-import com.physiotrack.appointment.service.ScheduleService;
+import com.physiotrack.usermanagement.model.User;
+import com.physiotrack.usermanagement.service.UserManagementService;
 import com.physiotrack.personalinfo.service.PersonalInfoService;
-import com.physiotrack.test.model.Question;
-import com.physiotrack.test.service.TestManageService;
-import com.physiotrack.test.service.TestService;
+import com.physiotrack.usermanagement.repository.UserRepository;
+
+// Therapy module imports (provided by teammate)
+import com.physiotrack.therapy.model.PTProgram;
+import com.physiotrack.therapy.model.PTActivity;
+import com.physiotrack.therapy.model.OTProgram;
+import com.physiotrack.therapy.model.OTActivity;
 import com.physiotrack.therapy.api.TherapyManagementService;
 import com.physiotrack.therapy.api.TherapyProgressService;
 import com.physiotrack.therapy.init.TherapyDataInitializer;
-import com.physiotrack.therapy.model.OTActivity;
-import com.physiotrack.therapy.model.OTProgram;
-import com.physiotrack.therapy.model.PTActivity;
-// Therapy module imports (provided by teammate)
-import com.physiotrack.therapy.model.PTProgram;
-import com.physiotrack.usermanagement.model.User;
-import com.physiotrack.usermanagement.repository.UserRepository;
-import com.physiotrack.usermanagement.service.UserManagementService;
+import com.physiotrack.appointment.model.Appointment;
+import com.physiotrack.appointment.service.AppointmentService;
+import com.physiotrack.appointment.service.ScheduleService;
+import com.physiotrack.journal.api.JournalService;
+import com.physiotrack.journal.model.Journal;
+import com.physiotrack.summary.api.SummaryService;
+import com.physiotrack.summary.model.SummaryReport;
+import com.physiotrack.test.model.Question;
+import com.physiotrack.test.service.TestManageService;
+import com.physiotrack.test.service.TestService;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.stereotype.Component;
+import org.springframework.core.annotation.Order;
 
 /**
  * INTERACTIVE DemoRunner (Console Menu)
@@ -52,6 +57,9 @@ public class DemoRunner implements CommandLineRunner {
   private final TherapyProgressService therapyProgressService;
   private final TherapyDataInitializer therapyDataInitializer;
 
+  private final JournalService journalService;
+  private final SummaryService summaryService;
+
   private final AppointmentService appointmentService;
   private final ScheduleService scheduleService;
 
@@ -69,6 +77,8 @@ public class DemoRunner implements CommandLineRunner {
       PersonalInfoService personalInfoService,
       TherapyManagementService therapyManagementService,
       TherapyProgressService therapyProgressService,
+      JournalService journalService,
+      SummaryService summaryService,
       UserRepository userRepository,
       TherapyDataInitializer therapyDataInitializer,
       AppointmentService appointmentService,
@@ -80,6 +90,8 @@ public class DemoRunner implements CommandLineRunner {
     this.personalInfoService = personalInfoService;
     this.therapyManagementService = therapyManagementService;
     this.therapyProgressService = therapyProgressService;
+    this.journalService = journalService;
+    this.summaryService = summaryService;
     this.userRepository = userRepository;
     this.therapyDataInitializer = therapyDataInitializer;
     this.appointmentService = appointmentService;
@@ -259,63 +271,432 @@ public class DemoRunner implements CommandLineRunner {
     }
   }
 
-  // --- 5) Physiotherapy Module (PT-focused demo) ---
+  // --- 4) Physiotherapy Module (PT-focused demo) ---
   private void demoPhysiotherapy() {
     System.out.println("\n==========================================");
     System.out.println("[TEST] PHYSIOTHERAPY MODULE DEMO (PT)");
     System.out.println("==========================================");
 
-    User physio = findAnyPhysioOrThrow();
+    Scanner scanner = new Scanner(System.in);
 
-    User patientA = seedPatient("patientA", "patientA@test.com");
+    // User selection menu
+    System.out.println("\n--- Select User Role ---");
+    System.out.println("1) Login as Physiotherapist");
+    System.out.println("2) Login as Patient");
+    System.out.println("0) Back to Main Menu");
 
-    PTProgram ptProgramA = therapyDataInitializer.createPTProgram(patientA.getId());
-    Long ptProgramAId = ptProgramA.getId();
+    int roleChoice = readInt(scanner, "Select role: ");
 
-    System.out.println("\n[TEST] UC20: Modify Patient’s Physiotherapy Activities...");
-    PTActivity ptActivity = new PTActivity();
-    ptActivity.setName("Arm Stretch");
-    ptActivity.setDescription("Stretch arms slowly for 5 minutes");
+    if (roleChoice == 0) {
+        return;
+    }
 
-    therapyManagementService.addPTActivity(ptProgramAId, ptActivity);
+    User selectedUser;
+    if (roleChoice == 1) {
+        // Login as Physio
+        selectedUser = selectUser(scanner, "PHYSIO");
+        if (selectedUser == null) return;
 
-    System.out.println("   -> SUCCESS: Physio '" + physio.getUsername()
-        + "' added PT activity '" + ptActivity.getName()
-        + "' to Patient (ID: " + patientA.getId() + ")");
+        System.out.println("\n[LOGGED IN] Physiotherapist: " + selectedUser.getUsername() + " (ID: " + selectedUser.getId() + ")");
 
-    System.out.println("\n[TEST] UC11: View Daily Physiotherapy Activities...");
-    therapyProgressService.getPTActivities(ptProgramAId)
-        .forEach(a -> System.out.println("   -> Activity: " + a.getName() + " | Completed: " + a.isCompleted()));
-  }
+        // Physio can select a patient
+        User patient = selectUser(scanner, "PATIENT");
+        if (patient == null) return;
 
-  // --- 6) Occupational Therapy Module (OT-focused demo) ---
+        System.out.println("[SELECTED] Patient: " + patient.getUsername() + " (ID: " + patient.getId() + ")");
+
+        // Get or create PT program for patient (fetch existing if any)
+        PTProgram ptProgram = getOrCreatePTProgram(patient.getId());
+        Long ptProgramId = ptProgram.getId();
+
+        // UC11: View Patient's Physiotherapy Activities FIRST
+        System.out.println("\nView Patient's Physiotherapy Activities...");
+        List<PTActivity> activities = therapyProgressService.getPTActivities(ptProgramId);
+
+        if (activities.isEmpty()) {
+            System.out.println("   -> No activities found for this patient.");
+        } else {
+            System.out.println("\n--- Current Activities ---");
+            for (int i = 0; i < activities.size(); i++) {
+                PTActivity a = activities.get(i);
+                System.out.println(" " + (i + 1) + ") " + a.getName()
+                        + " | Completed: " + a.isCompleted());
+            }
+        }
+
+        // UC20: Modify options
+        System.out.println("\n--- UC20: Modify Patient's Physiotherapy Activities ---");
+        System.out.println(" " + (activities.size() + 1) + ") Add New Activity");
+        if (!activities.isEmpty()) {
+            System.out.println(" " + (activities.size() + 2) + ") Remove Activity");
+        }
+        System.out.println(" 0) Back to Main Menu");
+
+        int actionChoice = readInt(scanner, "\nSelect option: ");
+
+        if (actionChoice == 0) {
+            return;
+        }
+
+        if (actionChoice == activities.size() + 1) {
+            // Add new activity
+            System.out.println("\n[ADD] Adding New Activity...");
+
+            String activityName = readString(scanner, "Enter activity name: ");
+
+            PTActivity ptActivity = new PTActivity();
+            ptActivity.setName(activityName);
+            ptActivity.setCompleted(false);
+
+            try {
+                therapyManagementService.addPTActivity(ptProgramId, ptActivity);
+
+                System.out.println("   -> SUCCESS: Physio '" + selectedUser.getUsername()
+                        + "' added PT activity '" + ptActivity.getName()
+                        + "' to Patient '" + patient.getUsername() + "'");
+
+                // Show updated list
+                System.out.println("\n--- Updated Activities List ---");
+                List<PTActivity> updatedActivities = therapyProgressService.getPTActivities(ptProgramId);
+                for (int i = 0; i < updatedActivities.size(); i++) {
+                    PTActivity a = updatedActivities.get(i);
+                    System.out.println(" " + (i + 1) + ") " + a.getName()
+                            + " | Completed: " + a.isCompleted());
+                }
+            } catch (Exception e) {
+                System.out.println("   -> FAILED: " + e.getMessage());
+                e.printStackTrace();
+            }
+
+        } else if (!activities.isEmpty() && actionChoice == activities.size() + 2) {
+            // Remove activity
+            System.out.println("\n[REMOVE] Select Activity to Remove:");
+            for (int i = 0; i < activities.size(); i++) {
+                PTActivity a = activities.get(i);
+                System.out.println(" " + (i + 1) + ") " + a.getName());
+            }
+            System.out.println(" 0) Cancel");
+
+            int removeChoice = readInt(scanner, "\nSelect activity to remove (1-" + activities.size() + ", 0 to cancel): ");
+
+            if (removeChoice == 0) {
+                System.out.println("[INFO] Removal cancelled.");
+                return;
+            }
+
+            if (removeChoice >= 1 && removeChoice <= activities.size()) {
+                PTActivity activityToRemove = activities.get(removeChoice - 1);
+
+                try {
+                    therapyManagementService.removePTActivity(ptProgramId, activityToRemove.getId());
+
+                    System.out.println("   -> SUCCESS: Activity '" + activityToRemove.getName() + "' removed.");
+
+                    // Show updated list
+                    System.out.println("\n--- Updated Activities List ---");
+                    List<PTActivity> updatedActivities = therapyProgressService.getPTActivities(ptProgramId);
+                    if (updatedActivities.isEmpty()) {
+                        System.out.println("   -> No activities remaining.");
+                    } else {
+                        for (int i = 0; i < updatedActivities.size(); i++) {
+                            PTActivity a = updatedActivities.get(i);
+                            System.out.println(" " + (i + 1) + ") " + a.getName()
+                                    + " | Completed: " + a.isCompleted());
+                        }
+                    }
+                } catch (Exception e) {
+                    System.out.println("   -> FAILED: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            } else {
+                System.out.println("   -> ERROR: Invalid selection.");
+            }
+
+        } else {
+            System.out.println("[ERROR] Invalid selection.");
+        }
+
+    } else if (roleChoice == 2) {
+        selectedUser = selectUser(scanner, "PATIENT");
+        if (selectedUser == null) return;
+
+        System.out.println("\n[LOGGED IN] Patient: " + selectedUser.getUsername() + " (ID: " + selectedUser.getId() + ")");
+
+        // Get or create PT program for this patient
+        PTProgram ptProgram = getOrCreatePTProgram(selectedUser.getId());
+        Long ptProgramId = ptProgram.getId();
+
+        // UC11: View Daily Physiotherapy Activities
+        System.out.println("\nView Daily Physiotherapy Activities...");
+        List<PTActivity> activities = therapyProgressService.getPTActivities(ptProgramId);
+
+        if (activities.isEmpty()) {
+            System.out.println("   -> No activities assigned yet.");
+            System.out.println("   -> Please ask your physiotherapist to assign activities.");
+        } else {
+            System.out.println("\n--- Your Activities ---");
+            for (int i = 0; i < activities.size(); i++) {
+                PTActivity a = activities.get(i);
+                System.out.println(" " + (i + 1) + ") " + a.getName()
+                        + " | Completed: " + a.isCompleted());
+            }
+
+            // UC13: Mark activity as complete (only if there are activities)
+            System.out.println("\nWould you like to mark an activity as completed?");
+            String response = readString(scanner, "Response (yes/no): ");
+
+            if ("yes".equalsIgnoreCase(response)) {
+                System.out.println("\n[UC13] Mark Activity as Completed");
+
+                int activityChoice = readInt(scanner, "Select activity to mark as completed (1-" + activities.size() + ", 0 to cancel): ");
+
+                if (activityChoice == 0) {
+                    System.out.println("[INFO] Action cancelled.");
+                    return;
+                }
+
+                if (activityChoice >= 1 && activityChoice <= activities.size()) {
+                    PTActivity selectedActivity = activities.get(activityChoice - 1);
+
+                    if (selectedActivity.isCompleted()) {
+                        System.out.println("   -> INFO: Activity '" + selectedActivity.getName() + "' is already marked as completed.");
+                    } else {
+                        try {
+                            therapyProgressService.markPTCompleted(ptProgramId, selectedActivity.getId());
+                            System.out.println("   -> SUCCESS: Activity '" + selectedActivity.getName() + "' marked as completed!");
+
+                            // Show updated list
+                            System.out.println("\n--- Updated Activities List ---");
+                            List<PTActivity> updatedActivities = therapyProgressService.getPTActivities(ptProgramId);
+                            for (int i = 0; i < updatedActivities.size(); i++) {
+                                PTActivity a = updatedActivities.get(i);
+                                System.out.println(" " + (i + 1) + ") " + a.getName()
+                                        + " | Completed: " + a.isCompleted());
+                            }
+                        } catch (Exception e) {
+                            System.out.println("   -> FAILED: " + e.getMessage());
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        System.out.println("[ERROR] Invalid role selection.");
+    }
+}
+
+  // --- 5) Occupational Therapy Module (OT-focused demo) ---
   private void demoOccupationalTherapy() {
     System.out.println("\n==========================================");
     System.out.println("[TEST] OCCUPATIONAL THERAPY MODULE DEMO (OT)");
     System.out.println("==========================================");
 
-    User physio = findAnyPhysioOrThrow();
+    Scanner scanner = new Scanner(System.in);
 
-    User patientA = seedPatient("patientA", "patientA@test.com");
+    // User selection menu
+    System.out.println("\n--- Select User Role ---");
+    System.out.println("1) Login as Physiotherapist");
+    System.out.println("2) Login as Patient");
+    System.out.println("0) Back to Main Menu");
 
-    OTProgram otProgramA = therapyDataInitializer.createOTProgram(patientA.getId());
-    Long otProgramAId = otProgramA.getId();
+    int roleChoice = readInt(scanner, "Select role: ");
 
-    System.out.println("\n[TEST] UC21: Modify Patient’s Occupational Therapy Activities...");
-    OTActivity otActivity = new OTActivity();
-    otActivity.setName("Grip Practice");
-    otActivity.setDescription("Practice hand grip using soft ball");
+    if (roleChoice == 0) {
+        return;
+    }
 
-    therapyManagementService.addOTActivity(otProgramAId, otActivity);
+    User selectedUser;
+    if (roleChoice == 1) {
+        // Login as Physio
+        selectedUser = selectUser(scanner, "PHYSIO");
+        if (selectedUser == null) return;
 
-    System.out.println("   -> SUCCESS: Physio '" + physio.getUsername()
-        + "' added OT activity '" + otActivity.getName()
-        + "' to Patient (ID: " + patientA.getId() + ")");
+        System.out.println("\n[LOGGED IN] Physiotherapist: " + selectedUser.getUsername() + " (ID: " + selectedUser.getId() + ")");
 
-    System.out.println("\n[TEST] UC12: View Daily Occupational Therapy Activities...");
-    therapyProgressService.getOTActivities(otProgramAId)
-        .forEach(a -> System.out.println("   -> Activity: " + a.getName() + " | Completed: " + a.isCompleted()));
-  }
+        // Physio can select a patient
+        User patient = selectUser(scanner, "PATIENT");
+        if (patient == null) return;
+
+        System.out.println("[SELECTED] Patient: " + patient.getUsername() + " (ID: " + patient.getId() + ")");
+
+        // Get or create OT program for patient (fetch existing if any)
+        OTProgram otProgram = getOrCreateOTProgram(patient.getId());
+        Long otProgramId = otProgram.getId();
+
+        // UC12: View Patient's Occupational Therapy Activities FIRST
+        System.out.println("\nView Patient's Occupational Therapy Activities...");
+        List<OTActivity> activities = therapyProgressService.getOTActivities(otProgramId);
+
+        if (activities.isEmpty()) {
+            System.out.println("   -> No activities found for this patient.");
+        } else {
+            System.out.println("\n--- Current Activities ---");
+            for (int i = 0; i < activities.size(); i++) {
+                OTActivity a = activities.get(i);
+                System.out.println(" " + (i + 1) + ") " + a.getName()
+                        + " | Completed: " + a.isCompleted());
+            }
+        }
+
+        // UC21: Modify options
+        System.out.println("\n--- UC21: Modify Patient's Occupational Therapy Activities ---");
+        System.out.println(" " + (activities.size() + 1) + ") Add New Activity");
+        if (!activities.isEmpty()) {
+            System.out.println(" " + (activities.size() + 2) + ") Remove Activity");
+        }
+        System.out.println(" 0) Back to Main Menu");
+
+        int actionChoice = readInt(scanner, "\nSelect option: ");
+
+        if (actionChoice == 0) {
+            return;
+        }
+
+        if (actionChoice == activities.size() + 1) {
+            // Add new activity
+            System.out.println("\n[ADD] Adding New Activity...");
+
+            String activityName = readString(scanner, "Enter activity name: ");
+
+            OTActivity otActivity = new OTActivity();
+            otActivity.setName(activityName);
+            otActivity.setCompleted(false);
+
+            try {
+                therapyManagementService.addOTActivity(otProgramId, otActivity);
+
+                System.out.println("   -> SUCCESS: Physio '" + selectedUser.getUsername()
+                        + "' added OT activity '" + otActivity.getName()
+                        + "' to Patient '" + patient.getUsername() + "'");
+
+                // Show updated list
+                System.out.println("\n--- Updated Activities List ---");
+                List<OTActivity> updatedActivities = therapyProgressService.getOTActivities(otProgramId);
+                for (int i = 0; i < updatedActivities.size(); i++) {
+                    OTActivity a = updatedActivities.get(i);
+                    System.out.println(" " + (i + 1) + ") " + a.getName()
+                            + " | Completed: " + a.isCompleted());
+                }
+            } catch (Exception e) {
+                System.out.println("   -> FAILED: " + e.getMessage());
+                e.printStackTrace();
+            }
+
+        } else if (!activities.isEmpty() && actionChoice == activities.size() + 2) {
+            // Remove activity
+            System.out.println("\n[REMOVE] Select Activity to Remove:");
+            for (int i = 0; i < activities.size(); i++) {
+                OTActivity a = activities.get(i);
+                System.out.println(" " + (i + 1) + ") " + a.getName());
+            }
+            System.out.println(" 0) Cancel");
+
+            int removeChoice = readInt(scanner, "\nSelect activity to remove (1-" + activities.size() + ", 0 to cancel): ");
+
+            if (removeChoice == 0) {
+                System.out.println("[INFO] Removal cancelled.");
+                return;
+            }
+
+            if (removeChoice >= 1 && removeChoice <= activities.size()) {
+                OTActivity activityToRemove = activities.get(removeChoice - 1);
+
+                try {
+                    therapyManagementService.removeOTActivity(otProgramId, activityToRemove.getId());
+
+                    System.out.println("   -> SUCCESS: Activity '" + activityToRemove.getName() + "' removed.");
+
+                    // Show updated list
+                    System.out.println("\n--- Updated Activities List ---");
+                    List<OTActivity> updatedActivities = therapyProgressService.getOTActivities(otProgramId);
+                    if (updatedActivities.isEmpty()) {
+                        System.out.println("   -> No activities remaining.");
+                    } else {
+                        for (int i = 0; i < updatedActivities.size(); i++) {
+                            OTActivity a = updatedActivities.get(i);
+                            System.out.println(" " + (i + 1) + ") " + a.getName()
+                                    + " | Completed: " + a.isCompleted());
+                        }
+                    }
+                } catch (Exception e) {
+                    System.out.println("   -> FAILED: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            } else {
+                System.out.println("   -> ERROR: Invalid selection.");
+            }
+
+        } else {
+            System.out.println("[ERROR] Invalid selection.");
+        }
+
+    } else if (roleChoice == 2) {
+        // Login as Patient
+        selectedUser = selectUser(scanner, "PATIENT");
+        if (selectedUser == null) return;
+
+        System.out.println("\n[LOGGED IN] Patient: " + selectedUser.getUsername() + " (ID: " + selectedUser.getId() + ")");
+
+        // Get or create OT program for this patient
+        OTProgram otProgram = getOrCreateOTProgram(selectedUser.getId());
+        Long otProgramId = otProgram.getId();
+
+        // UC12: View Daily Occupational Therapy Activities
+        System.out.println("\nView Daily Occupational Therapy Activities...");
+        List<OTActivity> activities = therapyProgressService.getOTActivities(otProgramId);
+
+        if (activities.isEmpty()) {
+            System.out.println("   -> No activities assigned yet.");
+            System.out.println("   -> Please ask your physiotherapist to assign activities.");
+        } else {
+            System.out.println("\n--- Your Activities ---");
+            for (int i = 0; i < activities.size(); i++) {
+                OTActivity a = activities.get(i);
+                System.out.println(" " + (i + 1) + ") " + a.getName()
+                        + " | Completed: " + a.isCompleted());
+            }
+
+            // Mark activity as complete (only if there are activities)
+            System.out.println("\nWould you like to mark an activity as completed?");
+            String response = readString(scanner, "Response (yes/no): ");
+
+            if ("yes".equalsIgnoreCase(response)) {
+                int activityChoice = readInt(scanner, "Select activity to mark as completed (1-" + activities.size() + ", 0 to cancel): ");
+
+                if (activityChoice == 0) {
+                    System.out.println("[INFO] Action cancelled.");
+                    return;
+                }
+
+                if (activityChoice >= 1 && activityChoice <= activities.size()) {
+                    OTActivity selectedActivity = activities.get(activityChoice - 1);
+
+                    if (selectedActivity.isCompleted()) {
+                        System.out.println("   -> INFO: Activity '" + selectedActivity.getName() + "' is already marked as completed.");
+                    } else {
+                        try {
+                            therapyProgressService.markOTCompleted(otProgramId, selectedActivity.getId());
+                            System.out.println("   -> SUCCESS: Activity '" + selectedActivity.getName() + "' marked as completed!");
+
+                            // Show updated list
+                            System.out.println("\n--- Updated Activities List ---");
+                            List<OTActivity> updatedActivities = therapyProgressService.getOTActivities(otProgramId);
+                            for (int i = 0; i < updatedActivities.size(); i++) {
+                                OTActivity a = updatedActivities.get(i);
+                                System.out.println(" " + (i + 1) + ") " + a.getName()
+                                        + " | Completed: " + a.isCompleted());
+                            }
+                        } catch (Exception e) {
+                            System.out.println("   -> FAILED: " + e.getMessage());
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        System.out.println("[ERROR] Invalid role selection.");
+    }
+}
 
   // -------------------- Appointment Booking Menu --------------------
 
@@ -608,13 +989,57 @@ public class DemoRunner implements CommandLineRunner {
   }
 
   private void demoJournalPlaceholder() {
-    System.out.println("\n[INFO] Manage Journal Module demo not wired yet.");
-    System.out.println("       Add JournalService injection + demo method here.");
+    System.out.println("\n[DEMO] Journal Module (simple demo)");
+    try {
+      User patient = findAnyPatientOrThrow();
+      System.out.println(" Using patient: " + patient.getUsername() + " (id=" + patient.getId() + ")");
+
+      Journal j = new Journal();
+      j.setPatientId(patient.getId());
+      j.setTitle("Demo Entry from DemoRunner");
+      j.setWeather("Sunny");
+      j.setFeeling("Okay");
+      j.setHealthCondition("Stable");
+      j.setComment("This journal was created by DemoRunner for quick testing.");
+
+      Journal created = journalService.createJournal(patient.getId(), j);
+      System.out.println("   -> Created journal id=" + created.getId());
+
+      System.out.println("   -> Listing journals for patient:");
+      java.util.List<Journal> list = journalService.getJournalsForPatient(patient.getId(), patient.getId());
+      for (Journal item : list) {
+        System.out.println("      - [" + item.getId() + "] " + item.getTitle() + " (shared=" + item.isSharedWithPhysio() + ")");
+      }
+    } catch (Exception e) {
+      System.out.println("   -> FAILED: " + e.getMessage());
+    }
   }
 
   private void demoSummaryPlaceholder() {
-    System.out.println("\n[INFO] Summary Report Module demo not wired yet.");
-    System.out.println("       Add SummaryService injection + demo method here.");
+    System.out.println("\n[DEMO] Summary Module (simple demo)");
+    try {
+      User patient = findAnyPatientOrThrow();
+      System.out.println(" Using patient: " + patient.getUsername() + " (id=" + patient.getId() + ")");
+
+      java.util.List<SummaryReport> recent = summaryService.getRecentSummaries(patient.getId(), patient.getId());
+      System.out.println("   -> Recent summaries: " + recent.size());
+      for (SummaryReport sr : recent) {
+        System.out.println("      - [" + sr.getId() + "] " + sr.getMonth() + "/" + sr.getYear() + " -> " + (sr.getSummaryData() != null ? sr.getSummaryData().substring(0, Math.min(80, sr.getSummaryData().length())) : "(empty)"));
+      }
+
+      if (recent.isEmpty()) {
+        System.out.println("   -> No summaries found. Trying to fetch current month summary...");
+        java.time.LocalDate now = java.time.LocalDate.now();
+        SummaryReport monthly = summaryService.getMonthlySummary(patient.getId(), patient.getId(), now.getMonthValue(), now.getYear());
+        if (monthly != null) {
+          System.out.println("      -> Found summary id=" + monthly.getId() + ", data length=" + (monthly.getSummaryData() != null ? monthly.getSummaryData().length() : 0));
+        } else {
+          System.out.println("      -> No monthly summary available.");
+        }
+      }
+    } catch (Exception e) {
+      System.out.println("   -> FAILED: " + e.getMessage());
+    }
   }
 
   // =========================
@@ -797,12 +1222,62 @@ public class DemoRunner implements CommandLineRunner {
     return slots.get(choice - 1);
   }
 
+  private User selectUser(Scanner scanner, String role) {
+    List<User> users = userRepository.findAll().stream()
+        .filter(u -> role.equalsIgnoreCase(u.getRole()) && u.isActive())
+        .toList();
+    
+    if (users.isEmpty()) {
+      System.out.println("[ERROR] No active " + role + " users found in the system.");
+      System.out.println("        Please register users first in User Management Module.");
+      return null;
+    }
+    
+    System.out.println("\nAvailable " + role + " Users:");
+    for (int i = 0; i < users.size(); i++) {
+      User u = users.get(i);
+      System.out.println(" " + (i + 1) + ") " + u.getUsername() 
+          + " (ID: " + u.getId() 
+          + ", Email: " + u.getEmail() + ")");
+    }
+    System.out.println(" 0) Cancel");
+    
+    while (true) {
+      int choice = readInt(scanner, "Select user (0 to cancel): ");
+      
+      if (choice == 0) {
+        System.out.println("[INFO] Selection cancelled.");
+        return null;
+      }
+      
+      if (choice >= 1 && choice <= users.size()) {
+        return users.get(choice - 1);
+      }
+      
+      System.out.println("[ERROR] Invalid selection. Please choose 0-" + users.size());
+    }
+  }
+
+  private PTProgram getOrCreatePTProgram(Long patientId) {
+    PTProgram program = therapyManagementService.findPTProgramByPatientId(patientId);
+    if (program != null) {
+        return program;
+    }
+    return therapyDataInitializer.createPTProgram(patientId);
+}
+  
+  private OTProgram getOrCreateOTProgram(Long patientId) {
+    OTProgram program = therapyManagementService.findOTProgramByPatientId(patientId);
+    if (program != null) {
+        return program;
+    }
+    return therapyDataInitializer.createOTProgram(patientId);
+  }
   private void startScreeningTest() {
     System.out.println("\n[TEST] Starting First Time Screening...");
-    int score = testService.evaluate();
+    testService.evaluate();
 
     System.out.println("[RESULT] Screening completed.");
-    System.out.println("         Total Score: " + score);
   }
 
   private void displayQuestionList() {
