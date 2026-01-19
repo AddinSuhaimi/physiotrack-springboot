@@ -800,22 +800,9 @@ public class DemoRunner implements CommandLineRunner {
   private void startScreeningTest() {
     System.out.println("\n[TEST] Starting First Time Screening...");
     int score = testService.evaluate();
-    
-    // Map score to severity
-    String severity;
-    if (score <= 1) {
-        severity = "Minimal";
-    } else if (score <= 3) {
-        severity = "Mild";
-    } else if (score <= 5) {
-        severity = "Moderate";
-    } else {
-        severity = "Severe";
-    }
 
     System.out.println("[RESULT] Screening completed.");
-    System.out.println("         Score = " + score);
-    System.out.println("         Severity Level = " + severity);
+    System.out.println("         Total Score: " + score);
   }
 
   private void displayQuestionList() {
