@@ -110,11 +110,11 @@ public class DemoRunner implements CommandLineRunner {
           break;
 
         case 1:
-          demoUserManagement();
+          demoUserManagement(scanner);
           break;
 
         case 2:
-          demoPersonalInfo();
+          demoPersonalInfo(scanner);
           break;
 
         case 3:
@@ -197,68 +197,155 @@ public class DemoRunner implements CommandLineRunner {
   // =========================
 
   // --- 1) User Management Module ---
-  private void demoUserManagement() {
-    System.out.println("\n==========================================");
-    System.out.println("[TEST] USER MANAGEMENT MODULE DEMO");
-    System.out.println("==========================================");
+  private void demoUserManagement(Scanner scanner) {
+    boolean loop = true;
 
-    System.out.println("\n[TEST] UC25: Registering Physiotherapist Account...");
-    User newPhysio = new User();
-    newPhysio.setUsername("JamesPhysio");
-    newPhysio.setEmail("james@physio.com");
-    newPhysio.setPassword("SecurePass123");
-    newPhysio.setClinicName("Sunway Medical");
+    while (loop) {
+      System.out.println("\n==========================================");
+      System.out.println("USER MANAGEMENT MODULE");
+      System.out.println("==========================================");
+      System.out.println("1) Register Physiotherapist");
+      System.out.println("2) View Registered Users");
+      System.out.println("3) Deactivate User Account");
+      System.out.println("0) Back");
+      System.out.println("------------------------------------------");
 
-    try {
-      User savedPhysio = userManagementService.registerPhysiotherapist(newPhysio);
-      System.out.println("   -> SUCCESS: Physio Registered. ID: " + savedPhysio.getId() + ", Role: " + savedPhysio.getRole());
-    } catch (Exception e) {
-      System.out.println("   -> FAILED: " + e.getMessage());
-    }
+      int choice = readInt(scanner, "Select option: ");
 
-    System.out.println("\n[TEST] UC26: Viewing Registered Users...");
-    List<User> allUsers = userManagementService.getAllUsers(null);
-    for (User u : allUsers) {
-      System.out.println("   -> User: " + u.getUsername() + " | Role: " + u.getRole() + " | Active: " + u.isActive());
-    }
-
-    System.out.println("\n[TEST] UC27: Admin Deactivates User (User ID=1)...");
-    try {
-      User deactivatedUser = userManagementService.deactivateUser(1L);
-      System.out.println("   -> SUCCESS: User status is now Active? " + deactivatedUser.isActive());
-    } catch (Exception e) {
-      System.out.println("   -> FAILED: " + e.getMessage());
+      try {
+        switch (choice) {
+          case 0 -> loop = false;
+          case 1 -> um_registerPhysio(scanner);
+          case 2 -> um_viewUsers(scanner);
+          case 3 -> um_deactivateUser(scanner);
+          default -> System.out.println("[ERROR] Invalid selection.");
+        }
+      } catch (Exception e) {
+        System.out.println("[FAILED] " + e.getMessage());
+      }
     }
   }
+
+  private void um_registerPhysio(Scanner scanner) {
+    System.out.println("\n[UC25] Register Physiotherapist Account");
+
+    String username = readString(scanner, "Username: ");
+    String email = readString(scanner, "Email: ");
+    String password = readString(scanner, "Password: ");
+    String clinicName = readString(scanner, "Clinic name: ");
+
+    User u = new User();
+    u.setUsername(username);
+    u.setEmail(email);
+    u.setPassword(password);
+    u.setClinicName(clinicName);
+
+    User saved = userManagementService.registerPhysiotherapist(u);
+
+    System.out.println("[OK] Physiotherapist registered:");
+    System.out.println(" - id=" + saved.getId());
+    System.out.println(" - username=" + saved.getUsername());
+    System.out.println(" - role=" + saved.getRole());
+    System.out.println(" - active=" + saved.isActive());
+  }
+
+  private void um_viewUsers(Scanner scanner) {
+    System.out.println("\n[UC26] View Registered Users");
+
+    // If your service supports role filtering you can keep this; otherwise remove it.
+    String role = readString(scanner, "Filter role (press ENTER for all): ");
+    if (role.isBlank()) role = null;
+
+    List<User> users = userManagementService.getAllUsers(role);
+
+    if (users.isEmpty()) {
+      System.out.println("[INFO] No users found.");
+      return;
+    }
+
+    System.out.println("\n--- USERS (" + users.size() + ") ---");
+    for (User u : users) {
+      System.out.println(" - id=" + u.getId()
+          + " | username=" + u.getUsername()
+          + " | email=" + u.getEmail()
+          + " | role=" + u.getRole()
+          + " | active=" + u.isActive());
+    }
+  }
+
+  private void um_deactivateUser(Scanner scanner) {
+    System.out.println("\n[UC27] Deactivate User Account");
+
+    Long id = readLong(scanner, "Enter user id to deactivate: ");
+    User updated = userManagementService.deactivateUser(id);
+
+    System.out.println("[OK] User deactivated:");
+    System.out.println(" - id=" + updated.getId());
+    System.out.println(" - username=" + updated.getUsername());
+    System.out.println(" - active=" + updated.isActive());
+  }                                     
+
 
   // --- 2) Manage User Personal Information ---
-  private void demoPersonalInfo() {
-    System.out.println("\n==========================================");
-    System.out.println("[TEST] PERSONAL INFO MODULE DEMO");
-    System.out.println("==========================================");
+  private void demoPersonalInfo(Scanner scanner) {
+    boolean loop = true;
 
-    System.out.println("\n[TEST] UC04: User Updates Profile (User ID=1)...");
-    try {
-      User updateData = new User();
-      updateData.setPhone("+60123456789");
-      updateData.setAddress("Kuala Lumpur, Malaysia");
+    while (loop) {
+      System.out.println("\n==========================================");
+      System.out.println("PERSONAL INFO MODULE");
+      System.out.println("==========================================");
+      System.out.println("1) Edit Profile (phone/address)");
+      System.out.println("2) Choose Preferred Language");
+      System.out.println("0) Back");
+      System.out.println("------------------------------------------");
 
-      User updatedUser = personalInfoService.updateProfile(1L, updateData);
-      System.out.println("   -> SUCCESS: Profile Updated.");
-      System.out.println("      New Phone: " + updatedUser.getPhone());
-      System.out.println("      New Address: " + updatedUser.getAddress());
-    } catch (Exception e) {
-      System.out.println("   -> FAILED: " + e.getMessage());
+      int choice = readInt(scanner, "Select option: ");
+
+      try {
+        switch (choice) {
+          case 0 -> loop = false;
+          case 1 -> pi_editProfile(scanner);
+          case 2 -> pi_chooseLanguage(scanner);
+          default -> System.out.println("[ERROR] Invalid selection.");
+        }
+      } catch (Exception e) {
+        System.out.println("[FAILED] " + e.getMessage());
+      }
     }
+  } 
 
-    System.out.println("\n[TEST] UC05: User Changes Language Preference (User ID=1)...");
-    try {
-      User langUser = personalInfoService.updateLanguage(1L, "ms");
-      System.out.println("   -> SUCCESS: Language changed to: " + langUser.getLanguagePreference());
-    } catch (Exception e) {
-      System.out.println("   -> FAILED: " + e.getMessage());
-    }
+  private void pi_editProfile(Scanner scanner) {
+    System.out.println("\n[UC04] Edit Profile");
+
+    Long userId = readLong(scanner, "User ID: ");
+    String phone = readString(scanner, "Phone: ");
+    String address = readString(scanner, "Address: ");
+
+    User updateData = new User();
+    updateData.setPhone(phone);
+    updateData.setAddress(address);
+
+    User updated = personalInfoService.updateProfile(userId, updateData);
+
+    System.out.println("[OK] Profile updated:");
+    System.out.println(" - id=" + updated.getId());
+    System.out.println(" - phone=" + updated.getPhone());
+    System.out.println(" - address=" + updated.getAddress());
   }
+
+  private void pi_chooseLanguage(Scanner scanner) {
+    System.out.println("\n[UC05] Choose Preferred Language");
+
+    Long userId = readLong(scanner, "User ID: ");
+    String lang = readString(scanner, "Language (e.g., en/ms/zh): ");
+
+    User updated = personalInfoService.updateLanguage(userId, lang);
+
+    System.out.println("[OK] Language updated:");
+    System.out.println(" - id=" + updated.getId());
+    System.out.println(" - language=" + updated.getLanguagePreference());
+  }
+
 
   // --- 4) Physiotherapy Module (PT-focused demo) ---
   private void demoPhysiotherapy() {
