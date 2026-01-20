@@ -87,7 +87,7 @@ public class DemoRunner implements CommandLineRunner {
       AppointmentService appointmentService,
       ScheduleService scheduleService,
       TestService testService,
-      TestManageService testManageService
+      TestManageService testManageService,
       PatientProgressTrackingService patientProgressTrackingService
   ) {
     this.userManagementService = userManagementService;
