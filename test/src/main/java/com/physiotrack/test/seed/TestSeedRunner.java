@@ -12,15 +12,18 @@ import com.physiotrack.test.model.Question;
 import com.physiotrack.test.model.Test;
 import com.physiotrack.test.model.TestType;
 import com.physiotrack.test.repository.TestRepository;
+import com.physiotrack.test.repository.QuestionRepository;
 
 @Order(2)
 @Component
 public class TestSeedRunner implements CommandLineRunner {
 
     private final TestRepository testRepository;
+    private final QuestionRepository questionRepository;
 
-    public TestSeedRunner(TestRepository testRepository) {
+    public TestSeedRunner(TestRepository testRepository, QuestionRepository questionRepository) {
         this.testRepository = testRepository;
+        this.questionRepository = questionRepository;
     }
 
     @Override
@@ -81,7 +84,8 @@ public class TestSeedRunner implements CommandLineRunner {
         // Assign questions to the test
         test.setQuestionList(questions);
 
-        // Save Test along with questions (cascade will persist questions)
+        // Save questions and test into each repository
+        questionRepository.saveAll(questions);
         testRepository.save(test);
 
         System.out.println("[SEED] Initial screening test seeded with " + questions.size() + " questions.");

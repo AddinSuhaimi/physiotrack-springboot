@@ -5,9 +5,9 @@ import java.util.List;
 
 public interface TestManageService {
 
-    List<Question> displayQuestionList();
+    List<Question> getQuestionList();
 
-    void addQuestion(Question question);
+    void addQuestion(String questionDesc, String questionCat, String questionAns);
 
     void editQuestion(Question question);
 
