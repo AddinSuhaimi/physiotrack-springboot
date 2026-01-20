@@ -130,12 +130,7 @@ The service implements a comprehensive authorization model:
 The `JournalRepository` interface extends Spring Data JPA's `JpaRepository` to provide database access for Journal entities.
 
 ### Implementation
-```java
-@Repository
-public interface JournalRepository extends JpaRepository<Journal, Long> {
-    List<Journal> findByPatientIdOrderByCreatedAtDesc(Long patientId);
-}
-```
+The repository is annotated with `@Repository` and extends `JpaRepository<Journal, Long>`, where `Journal` is the entity type and `Long` is the primary key type. This provides automatic CRUD functionality without requiring explicit implementation.
 
 ### Inherited Methods (from JpaRepository)
 By extending `JpaRepository<Journal, Long>`, the repository automatically provides:
@@ -190,7 +185,7 @@ The `Journal` entity represents the core domain model for journal entries in the
 ### Methods
 The entity provides standard getter and setter methods for all fields, following JavaBean conventions. Notable aspects:
 - **isSharedWithPhysio()**: Boolean getter following standard naming convention
-- All setters enable fluent updates through the service layer
+- All setters are standard void methods that allow the service layer to update entity state
 - No business logic in the entity itself (anemic domain model pattern)
 
 ### Design Considerations
