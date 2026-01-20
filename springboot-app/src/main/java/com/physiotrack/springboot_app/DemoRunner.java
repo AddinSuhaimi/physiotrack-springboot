@@ -1442,17 +1442,17 @@ public class DemoRunner implements CommandLineRunner {
     String type = readString(scanner, "Enter report type: ");
     String activity = readString(scanner, "Enter activity: ");
     int performance = readInt(scanner, "Enter performance score (0-100): ");
-
-    TreatmentReport report = new TreatmentReport();
-    report.setReportTitle(title);
-    report.setReportType(type);
-    report.setActivity(activity);
-    report.setPerformance(performance);
-    report.setDateTime(LocalDateTime.now());
-    report.setPatientId(patient.getId());
     
     try {
-        TreatmentReport saved = patientProgressTrackingService.createReport(report);
+        TreatmentReport saved 
+        = patientProgressTrackingService.createReport(
+            title,
+            type,
+            activity,
+            performance,
+            LocalDateTime.now(),
+            patient.getId()
+        );
         System.out.println("   -> SUCCESS: Report created with ID: " + saved.getId());
     } catch (Exception e) {
         System.out.println("   -> FAILED: " + e.getMessage());

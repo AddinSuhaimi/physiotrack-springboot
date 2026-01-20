@@ -6,6 +6,7 @@ import com.physiotrack.progresstracking.service.PatientProgressTrackingService;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 @Service
 public class PatientProgressTrackingServiceImpl implements PatientProgressTrackingService {
@@ -17,37 +18,22 @@ public class PatientProgressTrackingServiceImpl implements PatientProgressTracki
     }
 
     @Override
-    public TreatmentReport createReport(TreatmentReport report) {
+    public TreatmentReport createReport(
+        String title, 
+        String type, 
+        String activity, 
+        int performanceScore, 
+        LocalDateTime dateTime, 
+        Long patientId
+    ) {
+        TreatmentReport report = new TreatmentReport();
+        report.setReportTitle(title);
+        report.setReportType(type);
+        report.setActivity(activity);
+        report.setPerformance(performanceScore);
+        report.setDateTime(dateTime);
+        report.setPatientId(patientId);
         return treatmentReportRepository.save(report);
-    }
-
-    @Override
-    public Optional<TreatmentReport> retrieveReport(Long id) {
-        return treatmentReportRepository.findById(id);
-    }
-
-    @Override
-    public List<TreatmentReport> retrieveAllReports() {
-        return treatmentReportRepository.findAll();
-    }
-
-    @Override
-    public TreatmentReport updateReport(Long id, TreatmentReport updatedReport) {
-        return treatmentReportRepository.findById(id)
-                .map(report -> {
-                    report.setReportTitle(updatedReport.getReportTitle());
-                    report.setDateTime(updatedReport.getDateTime());
-                    report.setReportType(updatedReport.getReportType());
-                    report.setPerformance(updatedReport.getPerformance());
-                    report.setActivity(updatedReport.getActivity());
-                    return treatmentReportRepository.save(report);
-                })
-                .orElseThrow(() -> new RuntimeException("Report not found"));
-    }
-
-    @Override
-    public void deleteReport(Long id) {
-        treatmentReportRepository.deleteById(id);
     }
 
     @Override
