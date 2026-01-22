@@ -851,7 +851,7 @@ public class DemoRunner implements CommandLineRunner {
 
   // UC15 - Create booking request
   private void uc15_createBooking(Scanner scanner, Long patientId, Long ignoredPhysioId) {
-    System.out.println("\n[UC15] Create booking request");
+    System.out.println("\nCreate booking request");
 
     User physio = choosePhysio(scanner);
     Long physioId = physio.getId();
@@ -873,13 +873,13 @@ public class DemoRunner implements CommandLineRunner {
 
   // UC16 - Create update request
   private void uc16_createUpdate(Scanner scanner, Long patientId) {
-    System.out.println("\n[UC16] Create update request");
+    System.out.println("\nCreate update request");
 
     Appointment target = chooseConfirmedAppointmentForPatient(scanner, patientId);
     if (target == null) return;
 
     Long physioId = target.getPhysioId();
-    System.out.println("[UC16] Target appointment: id=" + target.getId()
+    System.out.println("Target appointment: id=" + target.getId()
         + " | physioId=" + physioId
         + " | currentDateTime=" + target.getDateTime());
 
@@ -916,7 +916,7 @@ public class DemoRunner implements CommandLineRunner {
 
   // UC17 - Create cancel request
   private void uc17_createCancel(Scanner scanner, Long patientId) {
-    System.out.println("\n[UC17] Create cancel request");
+    System.out.println("\nCreate cancel request");
 
     Appointment target = chooseConfirmedAppointmentForPatient(scanner, patientId);
     if (target == null) return;
@@ -937,7 +937,7 @@ public class DemoRunner implements CommandLineRunner {
 
   // UC24 - Manage appointment requests
   private void uc24_manageAppointmentRequests(Scanner scanner) {
-    System.out.println("\n[UC24] Manage appointment requests");
+    System.out.println("\nManage appointment requests");
 
     while (true) {
       List<Appointment> newReqs    = appointmentService.listPendingNewRequests();
@@ -1014,7 +1014,7 @@ public class DemoRunner implements CommandLineRunner {
 
   // -------------------- UC18 schedule --------------------
   private void uc18_viewSchedule(Scanner scanner, Long physioId) {
-    System.out.println("\n[UC18] View physio schedule");
+    System.out.println("\nView physio schedule");
 
     LocalDateTime from = readDateTime(scanner, "From (yyyy-MM-dd HH:mm): ");
     LocalDateTime to   = readDateTime(scanner, "To   (yyyy-MM-dd HH:mm): ");
@@ -1273,7 +1273,7 @@ public class DemoRunner implements CommandLineRunner {
 
     if (confirmed.isEmpty()) {
       System.out.println("[INFO] No confirmed appointments found for this patient.");
-      System.out.println("       Create booking request (UC15) then approve it (UC24) first.");
+      System.out.println("       Create booking request then approve it first.");
       return null;
     }
 
