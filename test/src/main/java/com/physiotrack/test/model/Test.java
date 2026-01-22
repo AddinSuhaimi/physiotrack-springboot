@@ -131,6 +131,7 @@ public class Test {
                 // Update fields
                 q.setQuestionDesc(question.getQuestionDesc());
                 q.setQuestionCat(question.getQuestionCat());
+                q.setQuestionAns(question.getQuestionAns());
                 found = true;
                 break;
             }

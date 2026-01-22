@@ -1,41 +1,40 @@
 package com.physiotrack.springboot_app;
 
-import java.util.List;
-import java.util.Scanner;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.List;
+import java.util.Scanner;
 
-import com.physiotrack.usermanagement.model.User;
-import com.physiotrack.usermanagement.service.UserManagementService;
-import com.physiotrack.personalinfo.service.PersonalInfoService;
-import com.physiotrack.usermanagement.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
 
-// Therapy module imports (provided by teammate)
-import com.physiotrack.therapy.model.PTProgram;
-import com.physiotrack.therapy.model.PTActivity;
-import com.physiotrack.therapy.model.OTProgram;
-import com.physiotrack.therapy.model.OTActivity;
-import com.physiotrack.therapy.api.TherapyManagementService;
-import com.physiotrack.therapy.api.TherapyProgressService;
-import com.physiotrack.therapy.init.TherapyDataInitializer;
 import com.physiotrack.appointment.model.Appointment;
 import com.physiotrack.appointment.service.AppointmentService;
 import com.physiotrack.appointment.service.ScheduleService;
 import com.physiotrack.journal.api.JournalService;
 import com.physiotrack.journal.model.Journal;
+import com.physiotrack.personalinfo.service.PersonalInfoService;
+import com.physiotrack.progresstracking.model.TreatmentReport;
+import com.physiotrack.progresstracking.service.PatientProgressTrackingService;
 import com.physiotrack.summary.api.SummaryService;
 import com.physiotrack.summary.model.SummaryReport;
 import com.physiotrack.test.model.Question;
 import com.physiotrack.test.service.TestManageService;
 import com.physiotrack.test.service.TestService;
-import com.physiotrack.progresstracking.model.TreatmentReport;
-import com.physiotrack.progresstracking.service.PatientProgressTrackingService;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.stereotype.Component;
-import org.springframework.core.annotation.Order;
+import com.physiotrack.therapy.api.TherapyManagementService;
+import com.physiotrack.therapy.api.TherapyProgressService;
+import com.physiotrack.therapy.init.TherapyDataInitializer;
+import com.physiotrack.therapy.model.OTActivity;
+import com.physiotrack.therapy.model.OTProgram;
+import com.physiotrack.therapy.model.PTActivity;
+// Therapy module imports (provided by teammate)
+import com.physiotrack.therapy.model.PTProgram;
+import com.physiotrack.usermanagement.model.User;
+import com.physiotrack.usermanagement.repository.UserRepository;
+import com.physiotrack.usermanagement.service.UserManagementService;
 
 /**
  * INTERACTIVE DemoRunner (Console Menu)
@@ -1400,7 +1399,7 @@ public class DemoRunner implements CommandLineRunner {
   }
 
   private void displayQuestionList() {
-    List<Question> questions = testManageService.displayQuestionList();
+    List<Question> questions = testManageService.getQuestionList();
 
     if (questions.isEmpty()) {
         System.out.println("[INFO] No questions found.");
@@ -1418,17 +1417,14 @@ public class DemoRunner implements CommandLineRunner {
 
     String desc = readString(scanner, "Enter question description: ");
     String cat  = readString(scanner, "Enter question category: ");
+    String ans = readString(scanner, "Please set the expected answer: ");
 
-    Question q = new Question();
-    q.setQuestionDesc(desc);
-    q.setQuestionCat(cat);
-
-    testManageService.addQuestion(q);
+    testManageService.addQuestion(desc, cat, ans);
     System.out.println("[OK] Question added.");
   }
 
   private void editQuestion(Scanner scanner) {
-      List<Question> questions = testManageService.displayQuestionList();
+      List<Question> questions = testManageService.getQuestionList();
 
       if (questions.isEmpty()) {
           System.out.println("[INFO] No questions available to edit.");
@@ -1449,19 +1445,44 @@ public class DemoRunner implements CommandLineRunner {
       }
 
       Question selectedQuestion = questions.get(number - 1);
+      displayQuestion(selectedQuestion, "Current Question Details");
 
-      String newDesc = readString(scanner, "Enter new description: ");
-      String newCat  = readString(scanner, "Enter new category: ");
+      String newDesc = readString(scanner,
+              "Enter new description (press Enter to keep current): ");
+      String newCat  = readString(scanner,
+              "Enter new category (press Enter to keep current): ");
+      String newAns  = readString(scanner,
+              "Enter new expected answer (press Enter to keep current): ");
 
-      selectedQuestion.setQuestionDesc(newDesc);
-      selectedQuestion.setQuestionCat(newCat);
+      // If user presses Enter, keep old values
+      if (!newDesc.isEmpty()) {
+          selectedQuestion.setQuestionDesc(newDesc);
+      }
+
+      if (!newCat.isEmpty()) {
+          selectedQuestion.setQuestionCat(newCat);
+      }
+
+      if (!newAns.isEmpty()) {
+          selectedQuestion.setQuestionAns(newAns);
+      }
 
       testManageService.editQuestion(selectedQuestion);
+      displayQuestion(selectedQuestion, "Updated Question Details");
       System.out.println("[OK] Question updated.");
   }
 
+  private static void displayQuestion(Question q, String title) {
+    System.out.println("\n--- " + title + " ---");
+    System.out.println("Description      : " + q.getQuestionDesc());
+    System.out.println("Category         : " + q.getQuestionCat());
+    System.out.println("Expected Answer  : " + q.getQuestionAns());
+    System.out.println("--------------------------------");
+  }
+
+
   private void removeQuestion(Scanner scanner) {
-      List<Question> questions = testManageService.displayQuestionList();
+      List<Question> questions = testManageService.getQuestionList();
 
       if (questions.isEmpty()) {
           System.out.println("[INFO] No questions available to remove.");
