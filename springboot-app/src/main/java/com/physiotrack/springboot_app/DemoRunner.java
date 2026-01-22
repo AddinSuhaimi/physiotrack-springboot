@@ -13,12 +13,13 @@ import com.physiotrack.usermanagement.repository.UserRepository;
 
 // Therapy module imports (provided by teammate)
 import com.physiotrack.therapy.model.PTProgram;
+import com.physiotrack.therapy.repository.OTProgramRepository;
+import com.physiotrack.therapy.repository.PTProgramRepository;
 import com.physiotrack.therapy.model.PTActivity;
 import com.physiotrack.therapy.model.OTProgram;
 import com.physiotrack.therapy.model.OTActivity;
 import com.physiotrack.therapy.api.TherapyManagementService;
 import com.physiotrack.therapy.api.TherapyProgressService;
-import com.physiotrack.therapy.init.TherapyDataInitializer;
 import com.physiotrack.appointment.model.Appointment;
 import com.physiotrack.appointment.service.AppointmentService;
 import com.physiotrack.appointment.service.ScheduleService;
@@ -48,13 +49,15 @@ public class DemoRunner implements CommandLineRunner {
 
   private final TherapyManagementService therapyManagementService;
   private final TherapyProgressService therapyProgressService;
-  private final TherapyDataInitializer therapyDataInitializer;
 
   private final AppointmentService appointmentService;
   private final ScheduleService scheduleService;
 
   // Temporary direct repo access for seeding/demo data
   private final UserRepository userRepository;
+  private final PTProgramRepository ptProgramRepository;
+  private final OTProgramRepository otProgramRepository;
+
 
   // ADD HERE AFTER DONE
   @Autowired
@@ -64,7 +67,8 @@ public class DemoRunner implements CommandLineRunner {
       TherapyManagementService therapyManagementService,
       TherapyProgressService therapyProgressService,
       UserRepository userRepository,
-      TherapyDataInitializer therapyDataInitializer,
+      PTProgramRepository ptProgramRepository,
+      OTProgramRepository otProgramRepository,
       AppointmentService appointmentService,
       ScheduleService scheduleService
   ) {
@@ -73,9 +77,10 @@ public class DemoRunner implements CommandLineRunner {
     this.therapyManagementService = therapyManagementService;
     this.therapyProgressService = therapyProgressService;
     this.userRepository = userRepository;
-    this.therapyDataInitializer = therapyDataInitializer;
     this.appointmentService = appointmentService;
     this.scheduleService = scheduleService;
+    this.ptProgramRepository = ptProgramRepository;
+    this.otProgramRepository = otProgramRepository;
   }
 
   @Override
@@ -1082,21 +1087,6 @@ public class DemoRunner implements CommandLineRunner {
         .orElseThrow(() -> new RuntimeException("Patient not found (seed a PATIENT user first)."));
   }
 
-  private User seedPatient(String username, String email) {
-    return userRepository.findAll().stream()
-        .filter(u -> u.getEmail() != null && u.getEmail().equalsIgnoreCase(email))
-        .findFirst()
-        .orElseGet(() -> {
-          User patient = new User();
-          patient.setUsername(username);
-          patient.setEmail(email);
-          patient.setPassword("Password123");
-          patient.setRole("PATIENT");
-          patient.setActive(true);
-          return userRepository.save(patient);
-        });
-  }
-
   private void printAppointment(Appointment a) {
     if (a == null) {
       System.out.println("  - null");
@@ -1251,19 +1241,33 @@ public class DemoRunner implements CommandLineRunner {
     }
   }
 
-  private PTProgram getOrCreatePTProgram(Long patientId) {
-    PTProgram program = therapyManagementService.findPTProgramByPatientId(patientId);
-    if (program != null) {
-        return program;
-    }
-    return therapyDataInitializer.createPTProgram(patientId);
-}
-  
   private OTProgram getOrCreateOTProgram(Long patientId) {
-    OTProgram program = therapyManagementService.findOTProgramByPatientId(patientId);
-    if (program != null) {
-        return program;
+    OTProgram program = otProgramRepository.findByPatientId(patientId);
+
+    if (program == null) {
+        program = new OTProgram();
+        program.setPatientId(patientId);
+        program = otProgramRepository.save(program);
+
+        System.out.println("[INFO] Created new OTProgram for patientId=" + patientId
+                + ", programId=" + program.getId());
     }
-    return therapyDataInitializer.createOTProgram(patientId);
+
+    return program;
+  }
+
+  private PTProgram getOrCreatePTProgram(Long patientId) {
+    PTProgram program = ptProgramRepository.findByPatientId(patientId);
+
+    if (program == null) {
+        program = new PTProgram();
+        program.setPatientId(patientId);
+        program = ptProgramRepository.save(program);
+
+        System.out.println("[INFO] Created new PTProgram for patientId=" + patientId
+                + ", programId=" + program.getId());
+    }
+
+    return program;
   }
 }

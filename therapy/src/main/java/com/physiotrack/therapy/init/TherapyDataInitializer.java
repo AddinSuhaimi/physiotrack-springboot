@@ -1,11 +1,11 @@
 package com.physiotrack.therapy.init;
 
-import com.physiotrack.therapy.model.PTProgram;
-import com.physiotrack.therapy.model.OTProgram;
-import com.physiotrack.therapy.model.PTActivity;
 import com.physiotrack.therapy.model.OTActivity;
-import com.physiotrack.therapy.repository.PTProgramRepository;
+import com.physiotrack.therapy.model.PTActivity;
+import com.physiotrack.therapy.model.OTProgram;
+import com.physiotrack.therapy.model.PTProgram;
 import com.physiotrack.therapy.repository.OTProgramRepository;
+import com.physiotrack.therapy.repository.PTProgramRepository;  
 import com.physiotrack.usermanagement.model.User;
 import com.physiotrack.usermanagement.repository.UserRepository;
 
@@ -23,7 +23,7 @@ public class TherapyDataInitializer implements CommandLineRunner {
     private final OTProgramRepository otRepo;
     private final UserRepository userRepo;
 
-    public TherapySeedRunner(
+    public TherapyDataInitializer(
             PTProgramRepository ptRepo,
             OTProgramRepository otRepo,
             UserRepository userRepo) {
