@@ -10,6 +10,8 @@ import com.physiotrack.usermanagement.model.User;
 import com.physiotrack.usermanagement.service.UserManagementService;
 import com.physiotrack.personalinfo.service.PersonalInfoService;
 import com.physiotrack.usermanagement.repository.UserRepository;
+
+// Therapy module imports (provided by teammate)
 import com.physiotrack.therapy.model.PTProgram;
 import com.physiotrack.therapy.model.PTActivity;
 import com.physiotrack.therapy.model.OTProgram;
