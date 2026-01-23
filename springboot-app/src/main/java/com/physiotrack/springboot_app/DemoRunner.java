@@ -13,24 +13,16 @@ import com.physiotrack.usermanagement.repository.UserRepository;
 
 // Therapy module imports (provided by teammate)
 import com.physiotrack.therapy.model.PTProgram;
+import com.physiotrack.therapy.repository.OTProgramRepository;
+import com.physiotrack.therapy.repository.PTProgramRepository;
 import com.physiotrack.therapy.model.PTActivity;
 import com.physiotrack.therapy.model.OTProgram;
 import com.physiotrack.therapy.model.OTActivity;
 import com.physiotrack.therapy.api.TherapyManagementService;
 import com.physiotrack.therapy.api.TherapyProgressService;
-import com.physiotrack.therapy.init.TherapyDataInitializer;
 import com.physiotrack.appointment.model.Appointment;
 import com.physiotrack.appointment.service.AppointmentService;
 import com.physiotrack.appointment.service.ScheduleService;
-import com.physiotrack.journal.api.JournalService;
-import com.physiotrack.journal.model.Journal;
-import com.physiotrack.summary.api.SummaryService;
-import com.physiotrack.summary.model.SummaryReport;
-import com.physiotrack.test.model.Question;
-import com.physiotrack.test.service.TestManageService;
-import com.physiotrack.test.service.TestService;
-import com.physiotrack.progresstracking.model.TreatmentReport;
-import com.physiotrack.progresstracking.service.PatientProgressTrackingService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -47,7 +39,7 @@ import org.springframework.core.annotation.Order;
  * Note:
  * - This class should NOT contain business logic. It should only call services and print outputs.
  */
-@Order(3)
+@Order(2)
 @Component
 public class DemoRunner implements CommandLineRunner {
 
@@ -57,21 +49,15 @@ public class DemoRunner implements CommandLineRunner {
 
   private final TherapyManagementService therapyManagementService;
   private final TherapyProgressService therapyProgressService;
-  private final TherapyDataInitializer therapyDataInitializer;
-
-  private final JournalService journalService;
-  private final SummaryService summaryService;
 
   private final AppointmentService appointmentService;
   private final ScheduleService scheduleService;
 
-  // First Time Screening Module
-  private final TestService testService;
-  private final TestManageService testManageService;
-  private final PatientProgressTrackingService patientProgressTrackingService;
-
   // Temporary direct repo access for seeding/demo data
   private final UserRepository userRepository;
+  private final PTProgramRepository ptProgramRepository;
+  private final OTProgramRepository otProgramRepository;
+
 
   // ADD HERE AFTER DONE
   @Autowired
@@ -80,29 +66,21 @@ public class DemoRunner implements CommandLineRunner {
       PersonalInfoService personalInfoService,
       TherapyManagementService therapyManagementService,
       TherapyProgressService therapyProgressService,
-      JournalService journalService,
-      SummaryService summaryService,
       UserRepository userRepository,
-      TherapyDataInitializer therapyDataInitializer,
+      PTProgramRepository ptProgramRepository,
+      OTProgramRepository otProgramRepository,
       AppointmentService appointmentService,
-      ScheduleService scheduleService,
-      TestService testService,
-      TestManageService testManageService,
-      PatientProgressTrackingService patientProgressTrackingService
+      ScheduleService scheduleService
   ) {
     this.userManagementService = userManagementService;
     this.personalInfoService = personalInfoService;
     this.therapyManagementService = therapyManagementService;
     this.therapyProgressService = therapyProgressService;
-    this.journalService = journalService;
-    this.summaryService = summaryService;
     this.userRepository = userRepository;
-    this.therapyDataInitializer = therapyDataInitializer;
     this.appointmentService = appointmentService;
     this.scheduleService = scheduleService;
-    this.testService = testService;
-    this.testManageService = testManageService;
-    this.patientProgressTrackingService = patientProgressTrackingService;
+    this.ptProgramRepository = ptProgramRepository;
+    this.otProgramRepository = otProgramRepository;
   }
 
   @Override
@@ -146,11 +124,11 @@ public class DemoRunner implements CommandLineRunner {
           break;
 
         case 6:
-          demoFirstTimeScreeningPlaceholder(scanner);
+          demoFirstTimeScreeningPlaceholder();
           break;
 
         case 7:
-          demoProgressTracking(scanner);
+          demoProgressTrackingPlaceholder();
           break;
 
         case 8:
@@ -1042,123 +1020,24 @@ public class DemoRunner implements CommandLineRunner {
   // PLACEHOLDERS FOR MODULES NOT IMPLEMENTED YET
   // =========================
 
-  private void demoFirstTimeScreeningPlaceholder(Scanner scanner) {
-      boolean loop = true;
-
-      while (loop) {
-          System.out.println("\n==========================================");
-          System.out.println("FIRST TIME SCREENING MODULE");
-          System.out.println("==========================================");
-          System.out.println("1) Start Screening Test");
-          System.out.println("2) View Questions");
-          System.out.println("3) Add Question");
-          System.out.println("4) Edit Question");
-          System.out.println("5) Remove Question");
-          System.out.println("0) Back");
-          System.out.println("------------------------------------------");
-
-          int choice = readInt(scanner, "Select: ");
-
-          try {
-              switch (choice) {
-                  case 1 -> startScreeningTest();
-                  case 2 -> displayQuestionList();
-                  case 3 -> addQuestion(scanner);
-                  case 4 -> editQuestion(scanner);
-                  case 5 -> removeQuestion(scanner);
-                  case 0 -> loop = false;
-                  default -> System.out.println("[ERROR] Invalid selection.");
-              }
-          } catch (Exception e) {
-              System.out.println("[FAILED] " + e.getMessage());
-          }
-      }
+  private void demoFirstTimeScreeningPlaceholder() {
+    System.out.println("\n[INFO] First Time Screening Module demo not wired yet.");
+    System.out.println("       Add ScreeningService injection + demo method here.");
   }
 
-  private void demoProgressTracking(Scanner scanner) {
-      System.out.println("\n==========================================");
-      System.out.println("[DEMO] Patient Progress Tracking Module");
-      System.out.println("==========================================");
-      
-      User patient = selectUser(scanner, "PATIENT");
-
-      boolean loop = true;
-      while (loop) {
-          System.out.println("\n--- Progress Tracking Menu ---");
-          System.out.println("1) View Patient Details");
-          System.out.println("2) View Patient Progress Reports");
-          System.out.println("3) Create Treatment Report");
-          System.out.println("0) Back to Main Menu");
-
-          int choice = readInt(scanner, "Select option: ");
-
-          switch (choice) {
-              case 0 -> loop = false;
-
-              case 1 -> viewPatientDetails(patient);
-
-              case 2 -> viewProgressReports(patient);
-
-              case 3 -> createTreatmentReport(scanner, patient);
-
-              default -> System.out.println("[ERROR] Invalid selection.");
-          }
-      }
+  private void demoProgressTrackingPlaceholder() {
+    System.out.println("\n[INFO] Patient Progress Tracking Module demo not wired yet.");
+    System.out.println("       Add ProgressTrackingService injection + demo method here.");
   }
-
 
   private void demoJournalPlaceholder() {
-    System.out.println("\n[DEMO] Journal Module (simple demo)");
-    try {
-      User patient = findAnyPatientOrThrow();
-      System.out.println(" Using patient: " + patient.getUsername() + " (id=" + patient.getId() + ")");
-
-      Journal j = new Journal();
-      j.setPatientId(patient.getId());
-      j.setTitle("Demo Entry from DemoRunner");
-      j.setWeather("Sunny");
-      j.setFeeling("Okay");
-      j.setHealthCondition("Stable");
-      j.setComment("This journal was created by DemoRunner for quick testing.");
-
-      Journal created = journalService.createJournal(patient.getId(), j);
-      System.out.println("   -> Created journal id=" + created.getId());
-
-      System.out.println("   -> Listing journals for patient:");
-      java.util.List<Journal> list = journalService.getJournalsForPatient(patient.getId(), patient.getId());
-      for (Journal item : list) {
-        System.out.println("      - [" + item.getId() + "] " + item.getTitle() + " (shared=" + item.isSharedWithPhysio() + ")");
-      }
-    } catch (Exception e) {
-      System.out.println("   -> FAILED: " + e.getMessage());
-    }
+    System.out.println("\n[INFO] Manage Journal Module demo not wired yet.");
+    System.out.println("       Add JournalService injection + demo method here.");
   }
 
   private void demoSummaryPlaceholder() {
-    System.out.println("\n[DEMO] Summary Module (simple demo)");
-    try {
-      User patient = findAnyPatientOrThrow();
-      System.out.println(" Using patient: " + patient.getUsername() + " (id=" + patient.getId() + ")");
-
-      java.util.List<SummaryReport> recent = summaryService.getRecentSummaries(patient.getId(), patient.getId());
-      System.out.println("   -> Recent summaries: " + recent.size());
-      for (SummaryReport sr : recent) {
-        System.out.println("      - [" + sr.getId() + "] " + sr.getMonth() + "/" + sr.getYear() + " -> " + (sr.getSummaryData() != null ? sr.getSummaryData().substring(0, Math.min(80, sr.getSummaryData().length())) : "(empty)"));
-      }
-
-      if (recent.isEmpty()) {
-        System.out.println("   -> No summaries found. Trying to fetch current month summary...");
-        java.time.LocalDate now = java.time.LocalDate.now();
-        SummaryReport monthly = summaryService.getMonthlySummary(patient.getId(), patient.getId(), now.getMonthValue(), now.getYear());
-        if (monthly != null) {
-          System.out.println("      -> Found summary id=" + monthly.getId() + ", data length=" + (monthly.getSummaryData() != null ? monthly.getSummaryData().length() : 0));
-        } else {
-          System.out.println("      -> No monthly summary available.");
-        }
-      }
-    } catch (Exception e) {
-      System.out.println("   -> FAILED: " + e.getMessage());
-    }
+    System.out.println("\n[INFO] Summary Report Module demo not wired yet.");
+    System.out.println("       Add SummaryService injection + demo method here.");
   }
 
   // =========================
@@ -1206,21 +1085,6 @@ public class DemoRunner implements CommandLineRunner {
         .filter(u -> "PATIENT".equalsIgnoreCase(u.getRole()))
         .findFirst()
         .orElseThrow(() -> new RuntimeException("Patient not found (seed a PATIENT user first)."));
-  }
-
-  private User seedPatient(String username, String email) {
-    return userRepository.findAll().stream()
-        .filter(u -> u.getEmail() != null && u.getEmail().equalsIgnoreCase(email))
-        .findFirst()
-        .orElseGet(() -> {
-          User patient = new User();
-          patient.setUsername(username);
-          patient.setEmail(email);
-          patient.setPassword("Password123");
-          patient.setRole("PATIENT");
-          patient.setActive(true);
-          return userRepository.save(patient);
-    });
   }
 
   private void printAppointment(Appointment a) {
@@ -1377,173 +1241,33 @@ public class DemoRunner implements CommandLineRunner {
     }
   }
 
-  private PTProgram getOrCreatePTProgram(Long patientId) {
-    PTProgram program = therapyManagementService.findPTProgramByPatientId(patientId);
-    if (program != null) {
-        return program;
-    }
-    return therapyDataInitializer.createPTProgram(patientId);
-}
-  
   private OTProgram getOrCreateOTProgram(Long patientId) {
-    OTProgram program = therapyManagementService.findOTProgramByPatientId(patientId);
-    if (program != null) {
-        return program;
-    }
-    return therapyDataInitializer.createOTProgram(patientId);
-  }
-  private void startScreeningTest() {
-    System.out.println("\n[TEST] Starting First Time Screening...");
-    testService.evaluate();
+    OTProgram program = otProgramRepository.findByPatientId(patientId);
 
-    System.out.println("[RESULT] Screening completed.");
-  }
+    if (program == null) {
+        program = new OTProgram();
+        program.setPatientId(patientId);
+        program = otProgramRepository.save(program);
 
-  private void displayQuestionList() {
-    List<Question> questions = testManageService.displayQuestionList();
-
-    if (questions.isEmpty()) {
-        System.out.println("[INFO] No questions found.");
-        return;
+        System.out.println("[INFO] Created new OTProgram for patientId=" + patientId
+                + ", programId=" + program.getId());
     }
 
-    System.out.println("\nScreening Questions:");
-    for (int i = 0; i < questions.size(); i++) {
-        System.out.println((i + 1) + ") " + questions.get(i).getQuestionDesc());
-    }
+    return program;
   }
 
-  private void addQuestion(Scanner scanner) {
-    System.out.println("\n[ADD QUESTION]");
+  private PTProgram getOrCreatePTProgram(Long patientId) {
+    PTProgram program = ptProgramRepository.findByPatientId(patientId);
 
-    String desc = readString(scanner, "Enter question description: ");
-    String cat  = readString(scanner, "Enter question category: ");
+    if (program == null) {
+        program = new PTProgram();
+        program.setPatientId(patientId);
+        program = ptProgramRepository.save(program);
 
-    Question q = new Question();
-    q.setQuestionDesc(desc);
-    q.setQuestionCat(cat);
-
-    testManageService.addQuestion(q);
-    System.out.println("[OK] Question added.");
-  }
-
-  private void editQuestion(Scanner scanner) {
-      List<Question> questions = testManageService.displayQuestionList();
-
-      if (questions.isEmpty()) {
-          System.out.println("[INFO] No questions available to edit.");
-          return;
-      }
-
-      // Display questions with numbering
-      System.out.println("\nScreening Questions:");
-      for (int i = 0; i < questions.size(); i++) {
-          System.out.println((i + 1) + ") " + questions.get(i).getQuestionDesc());
-      }
-
-      // Ask user for number instead of ID
-      int number = readInt(scanner, "Enter question number to edit (1-" + questions.size() + "): ");
-      if (number < 1 || number > questions.size()) {
-          System.out.println("[ERROR] Invalid selection.");
-          return;
-      }
-
-      Question selectedQuestion = questions.get(number - 1);
-
-      String newDesc = readString(scanner, "Enter new description: ");
-      String newCat  = readString(scanner, "Enter new category: ");
-
-      selectedQuestion.setQuestionDesc(newDesc);
-      selectedQuestion.setQuestionCat(newCat);
-
-      testManageService.editQuestion(selectedQuestion);
-      System.out.println("[OK] Question updated.");
-  }
-
-  private void removeQuestion(Scanner scanner) {
-      List<Question> questions = testManageService.displayQuestionList();
-
-      if (questions.isEmpty()) {
-          System.out.println("[INFO] No questions available to remove.");
-          return;
-      }
-
-      // Display questions with numbering
-      System.out.println("\nScreening Questions:");
-      for (int i = 0; i < questions.size(); i++) {
-          System.out.println((i + 1) + ") " + questions.get(i).getQuestionDesc());
-      }
-
-      // Ask user for number instead of ID
-      int number = readInt(scanner, "Enter question number to remove (1-" + questions.size() + "): ");
-      if (number < 1 || number > questions.size()) {
-          System.out.println("[ERROR] Invalid selection.");
-          return;
-      }
-
-      Question selectedQuestion = questions.get(number - 1);
-
-      testManageService.removeQuestion(selectedQuestion);
-      System.out.println("[OK] Question removed.");
-  }
-
-
-
-
-  private void viewPatientDetails(User patient) {
-    System.out.println("\n[Patient Details Information]");
-    System.out.println("ID: " + patient.getId());
-    System.out.println("Username: " + patient.getUsername());
-    System.out.println("Email: " + patient.getEmail());
-    System.out.println("Phone: " + patient.getPhone());
-    System.out.println("Address: " + patient.getAddress());
-    System.out.println("Language Preference: " + patient.getLanguagePreference());
-    System.out.println("Active: " + patient.isActive());
-  }
-
-  private void viewProgressReports(User patient) {
-    System.out.println("\n[Patient Progress Reports]");
-
-    List<TreatmentReport> reports = patientProgressTrackingService.getPatientReports(patient.getId());
-
-    if (reports.isEmpty()) {
-        System.out.println("   -> No reports found for this patient.");
-        return;
+        System.out.println("[INFO] Created new PTProgram for patientId=" + patientId
+                + ", programId=" + program.getId());
     }
 
-    for (TreatmentReport report : reports) {
-        System.out.println("ID: " + report.getId()
-                + " | Title: " + report.getReportTitle()
-                + " | Type: " + report.getReportType()
-                + " | Activity: " + report.getActivity()
-                + " | Performance: " + report.getPerformance()
-                + " | Date: " + (report.getDateTime() != null ? report.getDateTime() : "(not set)")
-        );
-    }
+    return program;
   }
-
-  private void createTreatmentReport(Scanner scanner, User patient) {
-    System.out.println("\n[Create Treatment Report for Patient: " + patient.getUsername() + " (ID: " + patient.getId() + ")]");
-
-    String title = readString(scanner, "Enter report title: ");
-    String type = readString(scanner, "Enter report type: ");
-    String activity = readString(scanner, "Enter activity: ");
-    int performance = readInt(scanner, "Enter performance score (0-100): ");
-
-    TreatmentReport report = new TreatmentReport();
-    report.setReportTitle(title);
-    report.setReportType(type);
-    report.setActivity(activity);
-    report.setPerformance(performance);
-    report.setDateTime(LocalDateTime.now());
-    report.setPatientId(patient.getId());
-    
-    try {
-        TreatmentReport saved = patientProgressTrackingService.createReport(report);
-        System.out.println("   -> SUCCESS: Report created with ID: " + saved.getId());
-    } catch (Exception e) {
-        System.out.println("   -> FAILED: " + e.getMessage());
-    }
-  }
-
 }
